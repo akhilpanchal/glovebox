@@ -1,0 +1,10 @@
+# Local development only. Copy this file to `.dev.vars` (which is gitignored
+# and must never be committed) to test the API locally without going through
+# Cloudflare Access.
+#
+# LOCAL_DEV_EMAIL is used as a fallback for `added_by` ONLY when the
+# Cf-Access-Authenticated-User-Email header is not present (i.e. when running
+# `wrangler dev` locally, outside of Cloudflare Access). In production, this
+# header is always set by Access, so this variable should never be needed
+# there and should not be configured as a production secret.
+LOCAL_DEV_EMAIL="you@example.com"

@@ -1,0 +1,9 @@
+CREATE TABLE fuel_entries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date TEXT NOT NULL,
+  odometer INTEGER NOT NULL,
+  volume REAL NOT NULL,
+  added_by TEXT NOT NULL,
+  notes TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);

@@ -6,3 +6,15 @@ routes = [
   { pattern = "www.algorythm.dev/glovebox*", zone_name = "algorythm.dev" },
   { pattern = "algorythm.dev/glovebox*", zone_name = "algorythm.dev" }
 ]
+
+# Created via `wrangler d1 create glovebox-db`. Replace database_id below
+# with the real ID printed by that command once it has been run.
+[[d1_databases]]
+binding = "DB"
+database_name = "glovebox-db"
+database_id = "c28b7d15-6730-4c2e-8fca-649e7f64f469"
+
+[assets]
+directory = "public"
+binding = "ASSETS"
+run_worker_first = ["/glovebox/api/*"]
