@@ -2,6 +2,12 @@ import { json } from "./lib/responses.js";
 import { getEntries, postEntry } from "./handlers/entries.js";
 import { getMe } from "./handlers/me.js";
 import { getVehicle } from "./handlers/vehicle.js";
+import {
+  getMaintenance,
+  createMaintenance,
+  updateMaintenance,
+  deleteMaintenance,
+} from "./handlers/maintenance.js";
 
 const API_PREFIX = "/glovebox/api";
 
@@ -30,6 +36,20 @@ export default {
 
       if (route === "/vehicle") {
         if (method === "GET") return getVehicle();
+        return json({ error: "Method not allowed" }, 405);
+      }
+
+      if (route === "/maintenance") {
+        if (method === "GET") return getMaintenance(env);
+        if (method === "POST") return createMaintenance(request, env);
+        return json({ error: "Method not allowed" }, 405);
+      }
+
+      const maintenanceItem = route.match(/^\/maintenance\/(\d+)$/);
+      if (maintenanceItem) {
+        const id = Number(maintenanceItem[1]);
+        if (method === "PUT") return updateMaintenance(request, env, id);
+        if (method === "DELETE") return deleteMaintenance(request, env, id);
         return json({ error: "Method not allowed" }, 405);
       }
 

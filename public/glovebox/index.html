@@ -130,8 +130,18 @@
 
         <section class="route" id="route-maintenance" data-route="#/maintenance" hidden>
           <section class="card">
-            <h2>Maintenance</h2>
-            <p class="placeholder-note">Coming soon.</p>
+            <div class="card-head">
+              <h2>Maintenance</h2>
+              <button type="button" id="maint-add-btn" class="btn-secondary">Add service</button>
+            </div>
+            <div id="maint-form-wrap" hidden></div>
+          </section>
+
+          <section class="card">
+            <h2>History</h2>
+            <ul id="maint-list" class="history-list">
+              <li class="history-empty">Loading…</li>
+            </ul>
           </section>
         </section>
 
