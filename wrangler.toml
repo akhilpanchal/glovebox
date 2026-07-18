@@ -3,5 +3,6 @@ main = "src/index.js"
 compatibility_date = "2026-07-17"
 
 routes = [
-  { pattern = "www.algorythm.dev/glovebox*", zone_name = "algorythm.dev" }
+  { pattern = "www.algorythm.dev/glovebox*", zone_name = "algorythm.dev" },
+  { pattern = "algorythm.dev/glovebox*", zone_name = "algorythm.dev" }
 ]
