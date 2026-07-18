@@ -1,6 +1,7 @@
 import { json } from "./lib/responses.js";
 import { getEntries, postEntry } from "./handlers/entries.js";
 import { getMe } from "./handlers/me.js";
+import { getVehicle } from "./handlers/vehicle.js";
 
 const API_PREFIX = "/glovebox/api";
 
@@ -24,6 +25,11 @@ export default {
       if (route === "/entries") {
         if (method === "GET") return getEntries(env);
         if (method === "POST") return postEntry(request, env);
+        return json({ error: "Method not allowed" }, 405);
+      }
+
+      if (route === "/vehicle") {
+        if (method === "GET") return getVehicle();
         return json({ error: "Method not allowed" }, 405);
       }
 
