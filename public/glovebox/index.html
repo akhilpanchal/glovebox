@@ -21,90 +21,150 @@
   </script>
 </head>
 <body>
-  <header>
-    <span class="wordmark">Glovebox</span>
+  <div class="app">
+    <header class="app-header">
+      <div class="header-left">
+        <button
+          type="button"
+          id="nav-toggle"
+          class="chip icon-button nav-toggle"
+          aria-label="Open menu"
+          aria-expanded="false"
+          aria-controls="side-nav"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <a href="#/fuel" class="wordmark">Glovebox</a>
+      </div>
 
-    <div class="account">
-      <button
-        type="button"
-        id="theme-toggle"
-        class="chip icon-button"
-        role="switch"
-        aria-checked="false"
-        aria-label="Switch to dark mode"
-      >
-        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 1020.354 15.354z"/></svg>
-      </button>
+      <div class="account header-controls">
+        <button
+          type="button"
+          id="theme-toggle"
+          class="chip icon-button"
+          role="switch"
+          aria-checked="false"
+          aria-label="Switch to dark mode"
+        >
+          <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 1020.354 15.354z"/></svg>
+        </button>
 
-      <button
-        type="button"
-        id="units-toggle"
-        class="chip units-chip"
-        role="switch"
-        aria-checked="false"
-        aria-label="Switch to kilometers and liters"
-      >MI</button>
+        <button
+          type="button"
+          id="units-toggle"
+          class="chip units-chip"
+          role="switch"
+          aria-checked="false"
+          aria-label="Switch to kilometers and liters"
+        >MI</button>
 
-      <button
-        type="button"
-        id="account-chip"
-        class="chip"
-        aria-haspopup="true"
-        aria-expanded="false"
-        aria-label="Show logged-in account"
-        hidden
-      ></button>
-      <div id="account-popover" class="popover" role="tooltip" hidden></div>
+        <button
+          type="button"
+          id="account-chip"
+          class="chip"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-label="Show logged-in account"
+          hidden
+        ></button>
+        <div id="account-popover" class="popover" role="tooltip" hidden></div>
+      </div>
+    </header>
+
+    <div class="app-body">
+      <nav class="side-nav" id="side-nav" aria-label="Sections">
+        <a href="#/fuel" class="nav-item" data-route="#/fuel">Fuel Log</a>
+        <a href="#/maintenance" class="nav-item" data-route="#/maintenance">Maintenance</a>
+        <a href="#/insurance" class="nav-item" data-route="#/insurance">Insurance</a>
+        <a href="#/vehicle" class="nav-item nav-item-vehicle" data-route="#/vehicle">
+          <span>Vehicle Information</span>
+          <span class="nav-subtext" id="nav-vehicle-name" hidden></span>
+        </a>
+      </nav>
+      <div class="nav-scrim" id="nav-scrim" hidden></div>
+
+      <main class="app-main">
+        <section class="route" id="route-fuel" data-route="#/fuel">
+          <section class="card dash-card">
+            <div class="dash-label">Average Efficiency</div>
+            <div id="dash-value"></div>
+            <div id="dash-sub" class="dash-sub"></div>
+          </section>
+
+          <section class="card">
+            <h2>Log a Fill-up</h2>
+            <form id="entry-form">
+              <div class="field">
+                <label for="date">Date</label>
+                <div class="date-field-wrap">
+                  <input type="date" id="date" name="date" />
+                  <span id="date-display" class="date-display" aria-hidden="true"></span>
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="odometer" id="odometer-label">Odometer (mi)</label>
+                <input type="number" id="odometer" name="odometer" min="0" step="1" required inputmode="numeric" />
+              </div>
+
+              <div class="field">
+                <label for="volume" id="volume-label">Gallons</label>
+                <input type="number" id="volume" name="volume" min="0" step="0.001" required inputmode="decimal" />
+              </div>
+
+              <div class="field">
+                <label for="notes">Notes (optional)</label>
+                <textarea id="notes" name="notes" rows="2"></textarea>
+              </div>
+
+              <button type="submit">Add Entry</button>
+              <p id="form-error" class="error" role="alert" aria-live="polite" hidden></p>
+            </form>
+          </section>
+
+          <section class="card">
+            <h2>History</h2>
+            <ul id="history-list" class="history-list">
+              <li class="history-empty">Loading...</li>
+            </ul>
+          </section>
+        </section>
+
+        <section class="route" id="route-maintenance" data-route="#/maintenance" hidden>
+          <section class="card">
+            <div class="card-head">
+              <h2>Maintenance</h2>
+              <button type="button" id="maint-add-btn" class="btn-secondary">Add service</button>
+            </div>
+            <div id="maint-form-wrap" hidden></div>
+          </section>
+
+          <section class="card">
+            <h2>History</h2>
+            <ul id="maint-list" class="history-list">
+              <li class="history-empty">Loading…</li>
+            </ul>
+          </section>
+        </section>
+
+        <section class="route" id="route-insurance" data-route="#/insurance" hidden>
+          <section class="card">
+            <div id="insurance-body">
+              <p class="placeholder-note">Loading…</p>
+            </div>
+          </section>
+        </section>
+
+        <section class="route" id="route-vehicle" data-route="#/vehicle" hidden>
+          <section class="card">
+            <p class="placeholder-note">Loading…</p>
+          </section>
+        </section>
+      </main>
     </div>
-  </header>
+  </div>
 
-  <main>
-    <section class="card dash-card">
-      <div class="dash-label">Average Efficiency</div>
-      <div id="dash-value"></div>
-      <div id="dash-sub" class="dash-sub"></div>
-    </section>
-
-    <section class="card">
-      <h2>Log a Fill-up</h2>
-      <form id="entry-form">
-        <div class="field">
-          <label for="date">Date</label>
-          <div class="date-field-wrap">
-            <input type="date" id="date" name="date" />
-            <span id="date-display" class="date-display" aria-hidden="true"></span>
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="odometer" id="odometer-label">Odometer (mi)</label>
-          <input type="number" id="odometer" name="odometer" min="0" step="1" required inputmode="numeric" />
-        </div>
-
-        <div class="field">
-          <label for="volume" id="volume-label">Gallons</label>
-          <input type="number" id="volume" name="volume" min="0" step="0.001" required inputmode="decimal" />
-        </div>
-
-        <div class="field">
-          <label for="notes">Notes (optional)</label>
-          <textarea id="notes" name="notes" rows="2"></textarea>
-        </div>
-
-        <button type="submit">Add Entry</button>
-        <p id="form-error" class="error" role="alert" aria-live="polite" hidden></p>
-      </form>
-    </section>
-
-    <section class="card">
-      <h2>History</h2>
-      <ul id="history-list" class="history-list">
-        <li class="history-empty">Loading...</li>
-      </ul>
-    </section>
-  </main>
-
-  <script src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
