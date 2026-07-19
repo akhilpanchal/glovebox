@@ -8,6 +8,7 @@ import {
   updateMaintenance,
   deleteMaintenance,
 } from "./handlers/maintenance.js";
+import { getInsurance, putInsurance } from "./handlers/insurance.js";
 
 const API_PREFIX = "/glovebox/api";
 
@@ -50,6 +51,12 @@ export default {
         const id = Number(maintenanceItem[1]);
         if (method === "PUT") return updateMaintenance(request, env, id);
         if (method === "DELETE") return deleteMaintenance(request, env, id);
+        return json({ error: "Method not allowed" }, 405);
+      }
+
+      if (route === "/insurance") {
+        if (method === "GET") return getInsurance(env);
+        if (method === "PUT") return putInsurance(request, env);
         return json({ error: "Method not allowed" }, 405);
       }
 

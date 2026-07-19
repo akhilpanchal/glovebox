@@ -574,6 +574,50 @@ textarea {
   width: auto;
 }
 
+/* --- Insurance --- */
+.ins-pdf {
+  display: inline-block;
+  margin-top: 1.25rem;
+  padding: 0.6rem 1rem;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ins-pdf:hover {
+  background: var(--accent-hover);
+}
+
+.ins-phones {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ins-phone {
+  font-weight: 600;
+  color: var(--accent);
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+.ins-phone:hover {
+  text-decoration: underline;
+}
+
+.row .phone-label {
+  flex: 1 1 9rem;
+  min-width: 0;
+}
+
+.row .phone-number {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+
 .card {
   background: var(--card-bg);
   border: 1px solid var(--border);
