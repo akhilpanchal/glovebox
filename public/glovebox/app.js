@@ -27,7 +27,7 @@ initRouter({
 // Insurance.
 initFuel();
 initVehicle(
-  document.getElementById("vehicle-name"),
+  document.getElementById("nav-vehicle-name"),
   document.getElementById("route-vehicle")
 );
 initMaintenance();

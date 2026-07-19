@@ -137,30 +137,19 @@ textarea {
   flex-shrink: 0;
 }
 
-/* Desktop: the side nav is always visible, so the hamburger is hidden. */
-.nav-toggle {
+/* Desktop: the side nav is always visible, so the hamburger is hidden.
+   Scoped to .app-header to outrank the .chip { display: flex } rule. */
+.app-header .nav-toggle {
   display: none;
 }
 
-.vehicle-name {
-  border: none;
-  background: transparent;
+/* Vehicle name shown as a subtitle under the "Vehicle Information" nav item. */
+.nav-subtext {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  font-weight: 500;
   color: var(--muted);
-  font-family: inherit;
-  font-weight: 600;
-  font-size: 0.9rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 40vw;
-}
-
-.vehicle-name:hover {
-  color: var(--text);
-  background: var(--input-bg);
 }
 
 .app-body {
@@ -208,6 +197,7 @@ textarea {
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text);
+  text-decoration: none;
 }
 
 .account {
@@ -263,6 +253,7 @@ textarea {
   font-size: 0.95rem;
   cursor: pointer;
   box-shadow: var(--shadow);
+  flex-shrink: 0; /* keep chips perfectly circular in flex rows */
 }
 
 .chip:hover {
@@ -863,7 +854,7 @@ button[type="submit"]:disabled {
 
 /* Below 720px the side nav becomes an off-canvas panel behind a hamburger. */
 @media (max-width: 719px) {
-  .nav-toggle {
+  .app-header .nav-toggle {
     display: flex;
   }
 

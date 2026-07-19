@@ -2,7 +2,7 @@ import { getVehicle } from "./api.js";
 import { formatDate, escapeHtml } from "./format.js";
 
 let vehicle = null;
-let nameButton = null;
+let navName = null;
 let viewEl = null;
 
 function displayName(v) {
@@ -11,26 +11,22 @@ function displayName(v) {
   return [v.year, v.make, v.model].filter(Boolean).join(" ");
 }
 
-export function initVehicle(nameButtonEl, viewElement) {
-  nameButton = nameButtonEl;
+export function initVehicle(navNameEl, viewElement) {
+  navName = navNameEl;
   viewEl = viewElement;
-
-  nameButton.addEventListener("click", () => {
-    location.hash = "#/vehicle";
-  });
 
   getVehicle()
     .then((v) => {
       vehicle = v;
       const name = displayName(v);
-      if (name) {
-        nameButton.textContent = name;
-        nameButton.hidden = false;
+      if (name && navName) {
+        navName.textContent = name;
+        navName.hidden = false;
       }
       renderView();
     })
     .catch(() => {
-      // Non-critical: leave the header name hidden if vehicle info is missing.
+      // Non-critical: leave the nav subtitle empty if vehicle info is missing.
     });
 }
 
