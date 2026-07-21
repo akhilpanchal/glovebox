@@ -6,6 +6,7 @@ import {
 } from "./api.js";
 import { currentUnits, MI_TO_KM, formatOdometer, onUnitsChange } from "./units.js";
 import { formatDate, todayIsoDate, escapeHtml } from "./format.js";
+import { itemActions } from "./icons.js";
 
 // Mirrors the backend vocabulary in src/handlers/maintenance.js.
 const CATEGORIES = [
@@ -129,10 +130,7 @@ function renderItem(e) {
       ${lines}
       ${docs}
       ${notes}
-      <div class="maint-actions">
-        <button type="button" class="btn-link" data-edit="${e.id}">Edit</button>
-        <button type="button" class="btn-link btn-danger" data-del="${e.id}">Delete</button>
-      </div>
+      ${itemActions(e.id)}
     </li>`;
 }
 

@@ -90,6 +90,41 @@ export async function createCharging(request, env) {
   return json(results[0], 201);
 }
 
+export async function updateCharging(request, env, id) {
+  const editor = authedEmail(request, env);
+  if (!editor) {
+    return json({ error: "Unauthorized: no authenticated user email found" }, 401);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch (_) {
+    return json({ error: "Invalid JSON body" }, 400);
+  }
+
+  const norm = normalize(body);
+  if (!norm.ok) return json({ error: norm.error }, 400);
+  const v = norm.values;
+
+  const result = await env.DB.prepare(
+    `UPDATE charging_sessions SET date = ?, odometer = ?, kwh = ?, miles_added = ?, notes = ?
+     WHERE id = ?`
+  )
+    .bind(v.date, v.odometer, v.kwh, v.miles_added, v.notes, id)
+    .run();
+
+  if (result.meta.changes === 0) return json({ error: "Not found" }, 404);
+
+  const { results } = await env.DB.prepare(
+    "SELECT * FROM charging_sessions WHERE id = ?"
+  )
+    .bind(id)
+    .all();
+
+  return json(results[0]);
+}
+
 export async function deleteCharging(request, env, id) {
   const editor = authedEmail(request, env);
   if (!editor) {

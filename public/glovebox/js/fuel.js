@@ -1,4 +1,10 @@
-import { getEntries, postEntry, getCharging } from "./api.js";
+import {
+  getEntries,
+  postEntry,
+  updateEntry,
+  deleteEntry,
+  getCharging,
+} from "./api.js";
 import {
   MI_TO_KM,
   GAL_TO_L,
@@ -10,9 +16,11 @@ import {
   volumeLabelText,
 } from "./units.js";
 import { formatDate, todayIsoDate, escapeHtml } from "./format.js";
+import { itemActions } from "./icons.js";
 
 let cachedEntries = [];
 let cachedCharges = [];
+let editingId = null;
 const els = {};
 
 export function initFuel() {
@@ -28,6 +36,10 @@ export function initFuel() {
   els.odometerLabel = document.getElementById("odometer-label");
   els.volumeInput = document.getElementById("volume");
   els.volumeLabel = document.getElementById("volume-label");
+  els.notes = document.getElementById("notes");
+  els.submitBtn = els.form.querySelector('button[type="submit"]');
+  els.cancelBtn = document.getElementById("entry-cancel");
+  els.formTitle = document.getElementById("fuel-form-title");
 
   els.dateInput.addEventListener("input", updateDateDisplay);
   els.dateInput.addEventListener("change", updateDateDisplay);
@@ -35,6 +47,8 @@ export function initFuel() {
 
   applyUnitLabels();
   els.form.addEventListener("submit", onSubmit);
+  els.historyList.addEventListener("click", onHistoryClick);
+  els.cancelBtn.addEventListener("click", resetEditMode);
 
   onUnitsChange((units, prev) => {
     convertFormFields(prev, units);
@@ -222,6 +236,7 @@ function renderHistory() {
             e.volume
           )}</span> · ${escapeHtml(e.added_by)}</div>
           ${notesHtml}
+          ${itemActions(e.id)}
         </li>`;
     })
     .join("");
@@ -241,6 +256,63 @@ async function loadEntries() {
     els.historyList.innerHTML = `<li class="history-empty">Error loading entries: ${escapeHtml(
       err.message
     )}</li>`;
+  }
+}
+
+// --- Edit / delete --------------------------------------------------------
+
+function onHistoryClick(event) {
+  const editBtn = event.target.closest("[data-edit]");
+  if (editBtn) {
+    const entry = cachedEntries.find((e) => e.id === Number(editBtn.dataset.edit));
+    if (entry) startEdit(entry);
+    return;
+  }
+  const delBtn = event.target.closest("[data-del]");
+  if (delBtn) onDelete(Number(delBtn.dataset.del));
+}
+
+function startEdit(entry) {
+  editingId = entry.id;
+  clearError();
+  els.dateInput.value = entry.date;
+  updateDateDisplay();
+  const isMetric = currentUnits() === "metric";
+  els.odometerInput.value = isMetric
+    ? Math.round(entry.odometer * MI_TO_KM)
+    : entry.odometer;
+  els.volumeInput.value = isMetric
+    ? (entry.volume * GAL_TO_L).toFixed(2)
+    : entry.volume;
+  els.notes.value = entry.notes || "";
+  els.submitBtn.textContent = "Save changes";
+  els.cancelBtn.hidden = false;
+  els.formTitle.textContent = "Edit Fill-up";
+  els.form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function resetEditMode() {
+  editingId = null;
+  els.submitBtn.textContent = "Add Entry";
+  els.cancelBtn.hidden = true;
+  els.formTitle.textContent = "Log a Fill-up";
+  els.form.reset();
+  resetDateToToday();
+  clearError();
+}
+
+async function onDelete(id) {
+  const entry = cachedEntries.find((e) => e.id === id);
+  const label = entry
+    ? `${formatDate(entry.date)} · ${formatOdometer(entry.odometer)}`
+    : "this entry";
+  if (!confirm(`Delete fuel entry (${label})? This can't be undone.`)) return;
+  try {
+    await deleteEntry(id);
+    if (editingId === id) resetEditMode();
+    await loadEntries();
+  } catch (err) {
+    showError(err.message);
   }
 }
 
@@ -275,22 +347,22 @@ async function onSubmit(event) {
   );
   const volumeGallons = isMetric ? volumeEntered / GAL_TO_L : volumeEntered;
 
-  const submitButton = els.form.querySelector("button[type=submit]");
-  submitButton.disabled = true;
+  const body = {
+    date,
+    odometer: odometerMiles,
+    volume: volumeGallons,
+    notes: notes || null,
+  };
 
+  els.submitBtn.disabled = true;
   try {
-    await postEntry({
-      date,
-      odometer: odometerMiles,
-      volume: volumeGallons,
-      notes: notes || null,
-    });
-    els.form.reset();
-    resetDateToToday();
+    if (editingId) await updateEntry(editingId, body);
+    else await postEntry(body);
+    resetEditMode();
     await loadEntries();
   } catch (err) {
     showError(err.message);
   } finally {
-    submitButton.disabled = false;
+    els.submitBtn.disabled = false;
   }
 }

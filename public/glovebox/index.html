@@ -100,7 +100,7 @@
           <div class="log-panel" id="panel-gas">
 
           <section class="card">
-            <h2>Log a Fill-up</h2>
+            <h2 id="fuel-form-title">Log a Fill-up</h2>
             <form id="entry-form">
               <div class="field">
                 <label for="date">Date</label>
@@ -126,6 +126,7 @@
               </div>
 
               <button type="submit">Add Entry</button>
+              <button type="button" id="entry-cancel" class="btn-secondary" hidden>Cancel</button>
               <p id="form-error" class="error" role="alert" aria-live="polite" hidden></p>
             </form>
           </section>
@@ -141,7 +142,7 @@
 
           <div class="log-panel" id="panel-ev" hidden>
             <section class="card">
-              <h2>Log a Charge</h2>
+              <h2 id="charge-form-title">Log a Charge</h2>
               <form id="charge-form">
                 <div class="field">
                   <label for="charge-date">Date</label>
@@ -172,6 +173,7 @@
                 </div>
 
                 <button type="submit">Add Charge</button>
+                <button type="button" id="charge-cancel" class="btn-secondary" hidden>Cancel</button>
                 <p id="charge-form-error" class="error" role="alert" aria-live="polite" hidden></p>
               </form>
             </section>

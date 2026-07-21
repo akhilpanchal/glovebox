@@ -452,6 +452,37 @@ textarea {
   margin-top: 0.65rem;
 }
 
+/* Edit/delete icon buttons on every log history row */
+.item-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--input-bg);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.icon-action:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.icon-action.icon-danger:hover {
+  color: var(--error);
+  border-color: var(--error);
+}
+
 /* --- Maintenance form --- */
 .maint-form {
   gap: 1rem;

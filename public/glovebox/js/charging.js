@@ -1,11 +1,18 @@
-import { getCharging, createCharging, deleteCharging } from "./api.js";
+import {
+  getCharging,
+  createCharging,
+  updateCharging,
+  deleteCharging,
+} from "./api.js";
 import { currentUnits, MI_TO_KM, formatOdometer, onUnitsChange } from "./units.js";
 import { formatDate, todayIsoDate, escapeHtml } from "./format.js";
+import { itemActions } from "./icons.js";
 
 // The charge form + history live inline in the "Charge" segment of the
 // Fuel & Charging tab (no separate tab, no add button — mirrors the fuel form).
 
 let entries = [];
+let editingId = null;
 const els = {};
 
 export function initCharging() {
@@ -20,6 +27,9 @@ export function initCharging() {
   els.miles = document.getElementById("charge-miles");
   els.milesLabel = document.getElementById("charge-miles-label");
   els.notes = document.getElementById("charge-notes");
+  els.submitBtn = els.form.querySelector('button[type="submit"]');
+  els.cancelBtn = document.getElementById("charge-cancel");
+  els.formTitle = document.getElementById("charge-form-title");
 
   els.date.addEventListener("input", updateDateDisplay);
   els.date.addEventListener("change", updateDateDisplay);
@@ -29,6 +39,7 @@ export function initCharging() {
 
   els.form.addEventListener("submit", onSubmit);
   els.list.addEventListener("click", onListClick);
+  els.cancelBtn.addEventListener("click", resetEditMode);
   onUnitsChange(() => {
     applyLabels();
     renderList();
@@ -96,15 +107,53 @@ function renderItem(e) {
         e.odometer
       )}</span>${added}</div>
       ${notes}
-      <div class="maint-actions">
-        <button type="button" class="btn-link btn-danger" data-del="${e.id}">Delete</button>
-      </div>
+      ${itemActions(e.id)}
     </li>`;
 }
 
 function onListClick(event) {
+  const editBtn = event.target.closest("[data-edit]");
+  if (editBtn) {
+    const entry = entries.find((e) => e.id === Number(editBtn.dataset.edit));
+    if (entry) startEdit(entry);
+    return;
+  }
   const delBtn = event.target.closest("[data-del]");
   if (delBtn) onDelete(Number(delBtn.dataset.del));
+}
+
+function startEdit(entry) {
+  editingId = entry.id;
+  els.formError.hidden = true;
+  els.date.value = entry.date;
+  updateDateDisplay();
+  const isMetric = currentUnits() === "metric";
+  els.odometer.value = isMetric
+    ? Math.round(entry.odometer * MI_TO_KM)
+    : entry.odometer;
+  els.kwh.value = entry.kwh;
+  els.miles.value =
+    entry.miles_added === null || entry.miles_added === undefined
+      ? ""
+      : isMetric
+      ? Math.round(entry.miles_added * MI_TO_KM)
+      : entry.miles_added;
+  els.notes.value = entry.notes || "";
+  els.submitBtn.textContent = "Save changes";
+  els.cancelBtn.hidden = false;
+  els.formTitle.textContent = "Edit Charge";
+  els.form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function resetEditMode() {
+  editingId = null;
+  els.submitBtn.textContent = "Add Charge";
+  els.cancelBtn.hidden = true;
+  els.formTitle.textContent = "Log a Charge";
+  els.form.reset();
+  els.date.value = todayIsoDate();
+  updateDateDisplay();
+  els.formError.hidden = true;
 }
 
 async function onDelete(id) {
@@ -115,6 +164,7 @@ async function onDelete(id) {
   if (!confirm(`Delete charging session (${label})? This can't be undone.`)) return;
   try {
     await deleteCharging(id);
+    if (editingId === id) resetEditMode();
     await loadEntries();
   } catch (err) {
     alert(`Could not delete: ${err.message}`);
@@ -158,17 +208,15 @@ async function onSubmit(event) {
     notes: els.notes.value.trim() || null,
   };
 
-  const submitBtn = els.form.querySelector('button[type="submit"]');
-  submitBtn.disabled = true;
+  els.submitBtn.disabled = true;
   try {
-    await createCharging(body);
-    els.form.reset();
-    els.date.value = todayIsoDate();
-    updateDateDisplay();
+    if (editingId) await updateCharging(editingId, body);
+    else await createCharging(body);
+    resetEditMode();
     await loadEntries();
   } catch (err) {
     showError(err.message);
   } finally {
-    submitBtn.disabled = false;
+    els.submitBtn.disabled = false;
   }
 }

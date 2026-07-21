@@ -1,5 +1,10 @@
 import { json } from "./lib/responses.js";
-import { getEntries, postEntry } from "./handlers/entries.js";
+import {
+  getEntries,
+  postEntry,
+  updateEntry,
+  deleteEntry,
+} from "./handlers/entries.js";
 import { getMe } from "./handlers/me.js";
 import { getVehicle } from "./handlers/vehicle.js";
 import {
@@ -12,6 +17,7 @@ import { getInsurance, putInsurance } from "./handlers/insurance.js";
 import {
   getCharging,
   createCharging,
+  updateCharging,
   deleteCharging,
 } from "./handlers/charging.js";
 
@@ -37,6 +43,14 @@ export default {
       if (route === "/entries") {
         if (method === "GET") return getEntries(env);
         if (method === "POST") return postEntry(request, env);
+        return json({ error: "Method not allowed" }, 405);
+      }
+
+      const entryItem = route.match(/^\/entries\/(\d+)$/);
+      if (entryItem) {
+        const id = Number(entryItem[1]);
+        if (method === "PUT") return updateEntry(request, env, id);
+        if (method === "DELETE") return deleteEntry(request, env, id);
         return json({ error: "Method not allowed" }, 405);
       }
 
@@ -74,6 +88,7 @@ export default {
       const chargingItem = route.match(/^\/charging\/(\d+)$/);
       if (chargingItem) {
         const id = Number(chargingItem[1]);
+        if (method === "PUT") return updateCharging(request, env, id);
         if (method === "DELETE") return deleteCharging(request, env, id);
         return json({ error: "Method not allowed" }, 405);
       }
