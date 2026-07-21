@@ -75,6 +75,7 @@
     <div class="app-body">
       <nav class="side-nav" id="side-nav" aria-label="Sections">
         <a href="#/fuel" class="nav-item" data-route="#/fuel">Fuel Log</a>
+        <a href="#/charging" class="nav-item" data-route="#/charging">Charging</a>
         <a href="#/maintenance" class="nav-item" data-route="#/maintenance">Maintenance</a>
         <a href="#/insurance" class="nav-item" data-route="#/insurance">Insurance</a>
         <a href="#/vehicle" class="nav-item nav-item-vehicle" data-route="#/vehicle">
@@ -87,7 +88,7 @@
       <main class="app-main">
         <section class="route" id="route-fuel" data-route="#/fuel">
           <section class="card dash-card">
-            <div class="dash-label">Average Efficiency</div>
+            <div class="dash-label" id="dash-label">Average Efficiency</div>
             <div id="dash-value"></div>
             <div id="dash-sub" class="dash-sub"></div>
           </section>
@@ -127,6 +128,23 @@
             <h2>History</h2>
             <ul id="history-list" class="history-list">
               <li class="history-empty">Loading...</li>
+            </ul>
+          </section>
+        </section>
+
+        <section class="route" id="route-charging" data-route="#/charging" hidden>
+          <section class="card">
+            <div class="card-head">
+              <h2>Charging</h2>
+              <button type="button" id="charge-add-btn" class="btn-secondary">Add charge</button>
+            </div>
+            <div id="charge-form-wrap" hidden></div>
+          </section>
+
+          <section class="card">
+            <h2>History</h2>
+            <ul id="charge-list" class="history-list">
+              <li class="history-empty">Loading…</li>
             </ul>
           </section>
         </section>

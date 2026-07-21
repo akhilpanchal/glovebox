@@ -45,3 +45,8 @@ export const putInsurance = (body) => req("/insurance", jsonBody("PUT", body));
 
 // Vehicle (used from Phase B on)
 export const getVehicle = () => req("/vehicle");
+
+// Charging (v2.1)
+export const getCharging = () => req("/charging");
+export const createCharging = (body) => req("/charging", jsonBody("POST", body));
+export const deleteCharging = (id) => req(`/charging/${id}`, { method: "DELETE" });

@@ -8,6 +8,7 @@ import { initFuel, loadFuel } from "./js/fuel.js";
 import { initVehicle, loadVehicle } from "./js/vehicle.js";
 import { initMaintenance, loadMaintenance } from "./js/maintenance.js";
 import { initInsurance, loadInsurance } from "./js/insurance.js";
+import { initCharging, loadCharging } from "./js/charging.js";
 
 initTheme(document.getElementById("theme-toggle"));
 initUnitsToggle(document.getElementById("units-toggle"));
@@ -32,7 +33,9 @@ initVehicle(
 );
 initMaintenance();
 initInsurance(document.getElementById("insurance-body"));
+initCharging();
 registerRoute("#/fuel", document.getElementById("route-fuel"), loadFuel);
+registerRoute("#/charging", document.getElementById("route-charging"), loadCharging);
 registerRoute("#/maintenance", document.getElementById("route-maintenance"), loadMaintenance);
 registerRoute("#/insurance", document.getElementById("route-insurance"), loadInsurance);
 registerRoute("#/vehicle", document.getElementById("route-vehicle"), loadVehicle);
