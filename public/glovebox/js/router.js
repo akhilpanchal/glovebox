@@ -2,7 +2,7 @@
 // load() runs once, on first activation (lazy fetch). No framework.
 
 const routes = new Map(); // hash -> { section, load, loaded }
-const DEFAULT_HASH = "#/fuel";
+const DEFAULT_HASH = "#/log";
 
 let appEl;
 let navEl;
@@ -47,10 +47,9 @@ function render() {
   for (const [h, route] of routes) {
     const active = h === hash;
     route.section.hidden = !active;
-    if (active && !route.loaded) {
-      route.loaded = true;
-      if (route.load) route.load();
-    }
+    // Re-run load() on every activation so a tab reflects data changed on another
+    // tab (e.g. the Fuel efficiency card picking up a newly-logged charge).
+    if (active && route.load) route.load();
   }
 
   navEl.querySelectorAll(".nav-item").forEach((link) => {

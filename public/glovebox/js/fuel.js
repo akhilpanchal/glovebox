@@ -1,4 +1,10 @@
-import { getEntries, postEntry } from "./api.js";
+import {
+  getEntries,
+  postEntry,
+  updateEntry,
+  deleteEntry,
+  getCharging,
+} from "./api.js";
 import {
   MI_TO_KM,
   GAL_TO_L,
@@ -10,8 +16,11 @@ import {
   volumeLabelText,
 } from "./units.js";
 import { formatDate, todayIsoDate, escapeHtml } from "./format.js";
+import { itemActions } from "./icons.js";
 
 let cachedEntries = [];
+let cachedCharges = [];
+let editingId = null;
 const els = {};
 
 export function initFuel() {
@@ -20,12 +29,17 @@ export function initFuel() {
   els.historyList = document.getElementById("history-list");
   els.dashValue = document.getElementById("dash-value");
   els.dashSub = document.getElementById("dash-sub");
+  els.dashLabel = document.getElementById("dash-label");
   els.dateInput = document.getElementById("date");
   els.dateDisplay = document.getElementById("date-display");
   els.odometerInput = document.getElementById("odometer");
   els.odometerLabel = document.getElementById("odometer-label");
   els.volumeInput = document.getElementById("volume");
   els.volumeLabel = document.getElementById("volume-label");
+  els.notes = document.getElementById("notes");
+  els.submitBtn = els.form.querySelector('button[type="submit"]');
+  els.cancelBtn = document.getElementById("entry-cancel");
+  els.formTitle = document.getElementById("fuel-form-title");
 
   els.dateInput.addEventListener("input", updateDateDisplay);
   els.dateInput.addEventListener("change", updateDateDisplay);
@@ -33,6 +47,8 @@ export function initFuel() {
 
   applyUnitLabels();
   els.form.addEventListener("submit", onSubmit);
+  els.historyList.addEventListener("click", onHistoryClick);
+  els.cancelBtn.addEventListener("click", resetEditMode);
 
   onUnitsChange((units, prev) => {
     convertFormFields(prev, units);
@@ -105,22 +121,48 @@ function clearError() {
 
 // --- Average efficiency dashboard -----------------------------------------
 
-// Assumes every fill-up tops the tank: distance since the earliest entry
-// divided by fuel added at every entry after it.
-function computeAverageEfficiency(entries) {
+// PHEV-aware efficiency over the fuel-fill-to-fuel-fill window. Charging sessions
+// whose odometer falls inside that window contribute electric miles, which are
+// removed so the headline reflects *gas* efficiency (see docs/v2.1-charging-plan.md).
+// Assumes every fill-up tops the tank: distance since the earliest entry divided
+// by fuel added at every entry after it.
+function computeEfficiency(entries, charges) {
   if (entries.length < 2) return null;
 
   const sorted = [...entries].sort((a, b) => a.odometer - b.odometer);
-  const totalMiles = sorted[sorted.length - 1].odometer - sorted[0].odometer;
-  const totalGallons = sorted.slice(1).reduce((sum, e) => sum + e.volume, 0);
+  const firstOdo = sorted[0].odometer;
+  const lastOdo = sorted[sorted.length - 1].odometer;
+  const spanMiles = lastOdo - firstOdo;
+  const gallons = sorted.slice(1).reduce((sum, e) => sum + e.volume, 0);
 
-  if (totalMiles <= 0 || totalGallons <= 0) return null;
+  if (spanMiles <= 0 || gallons <= 0) return null;
 
-  return { mpg: totalMiles / totalGallons, totalMiles, fillCount: sorted.length };
+  const inWindow = charges.filter(
+    (c) => c.odometer >= firstOdo && c.odometer <= lastOdo
+  );
+  const rawElectric = inWindow.reduce((s, c) => s + (Number(c.miles_added) || 0), 0);
+  const kwh = inWindow.reduce((s, c) => s + (Number(c.kwh) || 0), 0);
+  const electricMiles = Math.min(rawElectric, spanMiles); // guard against bad data
+  const gasMiles = spanMiles - electricMiles;
+
+  return {
+    gasMpg: gasMiles / gallons,
+    pctElectric: (electricMiles / spanMiles) * 100,
+    miPerKwh: kwh > 0 ? electricMiles / kwh : null,
+    spanMiles,
+    fillCount: sorted.length,
+    chargeCount: inWindow.length,
+    hasCharging: inWindow.length > 0,
+  };
 }
 
 function renderEfficiencyDash() {
-  const result = computeAverageEfficiency(cachedEntries);
+  const result = computeEfficiency(cachedEntries, cachedCharges);
+
+  if (els.dashLabel) {
+    els.dashLabel.textContent =
+      result && result.hasCharging ? "Gas Efficiency" : "Average Efficiency";
+  }
 
   if (!result) {
     els.dashValue.innerHTML =
@@ -131,25 +173,45 @@ function renderEfficiencyDash() {
 
   const isMetric = currentUnits() === "metric";
   const displayValue = isMetric
-    ? (result.mpg * (MI_TO_KM / GAL_TO_L)).toFixed(1)
-    : result.mpg.toFixed(1);
+    ? (result.gasMpg * (MI_TO_KM / GAL_TO_L)).toFixed(1)
+    : result.gasMpg.toFixed(1);
   const unitLabel = isMetric ? "KM/L" : "MPG";
 
   const [whole, decimal] = displayValue.split(".");
-  const digitTiles = whole
-    .split("")
-    .map((ch) => `<span class="dash-digit">${ch}</span>`)
-    .join("");
+  const tile = (ch) => `<span class="dash-digit">${ch}</span>`;
+  const wholeTiles = whole.split("").map(tile).join("");
+  const decimalTiles = decimal.split("").map(tile).join("");
 
   els.dashValue.innerHTML = `
     <div class="dash-digits">
-      ${digitTiles}
-      <span class="dash-digit dash-digit-unit">.${decimal} ${unitLabel}</span>
+      ${wholeTiles}
+      <span class="dash-dot">.</span>
+      ${decimalTiles}
+      <span class="dash-digit-unit">${unitLabel}</span>
     </div>`;
 
-  els.dashSub.textContent = `Based on ${result.fillCount} fill-ups · ${formatOdometer(
-    result.totalMiles
-  )} driven`;
+  els.dashSub.textContent = buildDashSub(result, isMetric);
+}
+
+function buildDashSub(result, isMetric) {
+  if (!result.hasCharging) {
+    return `Based on ${result.fillCount} fill-ups · ${formatOdometer(
+      result.spanMiles
+    )} driven`;
+  }
+  const pct = Math.round(result.pctElectric);
+  let miKwh = "";
+  if (result.miPerKwh != null) {
+    const v = isMetric
+      ? (result.miPerKwh * MI_TO_KM).toFixed(1)
+      : result.miPerKwh.toFixed(1);
+    const unit = isMetric ? "km/kWh" : "mi/kWh";
+    miKwh = ` · ${v} ${unit} (est)`;
+  }
+  const charges = `${result.chargeCount} charge${
+    result.chargeCount !== 1 ? "s" : ""
+  }`;
+  return `${pct}% electric${miKwh} · ${formatOdometer(result.spanMiles)} · ${charges}`;
 }
 
 // --- History --------------------------------------------------------------
@@ -174,6 +236,7 @@ function renderHistory() {
             e.volume
           )}</span> · ${escapeHtml(e.added_by)}</div>
           ${notesHtml}
+          ${itemActions(e.id)}
         </li>`;
     })
     .join("");
@@ -182,12 +245,74 @@ function renderHistory() {
 async function loadEntries() {
   els.historyList.innerHTML = '<li class="history-empty">Loading...</li>';
   try {
-    cachedEntries = await getEntries();
+    const [entries, charges] = await Promise.all([
+      getEntries(),
+      getCharging().catch(() => []),
+    ]);
+    cachedEntries = entries;
+    cachedCharges = charges;
     renderHistory();
   } catch (err) {
     els.historyList.innerHTML = `<li class="history-empty">Error loading entries: ${escapeHtml(
       err.message
     )}</li>`;
+  }
+}
+
+// --- Edit / delete --------------------------------------------------------
+
+function onHistoryClick(event) {
+  const editBtn = event.target.closest("[data-edit]");
+  if (editBtn) {
+    const entry = cachedEntries.find((e) => e.id === Number(editBtn.dataset.edit));
+    if (entry) startEdit(entry);
+    return;
+  }
+  const delBtn = event.target.closest("[data-del]");
+  if (delBtn) onDelete(Number(delBtn.dataset.del));
+}
+
+function startEdit(entry) {
+  editingId = entry.id;
+  clearError();
+  els.dateInput.value = entry.date;
+  updateDateDisplay();
+  const isMetric = currentUnits() === "metric";
+  els.odometerInput.value = isMetric
+    ? Math.round(entry.odometer * MI_TO_KM)
+    : entry.odometer;
+  els.volumeInput.value = isMetric
+    ? (entry.volume * GAL_TO_L).toFixed(2)
+    : entry.volume;
+  els.notes.value = entry.notes || "";
+  els.submitBtn.textContent = "Save changes";
+  els.cancelBtn.hidden = false;
+  els.formTitle.textContent = "Edit Fill-up";
+  els.form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function resetEditMode() {
+  editingId = null;
+  els.submitBtn.textContent = "Add Entry";
+  els.cancelBtn.hidden = true;
+  els.formTitle.textContent = "Log a Fill-up";
+  els.form.reset();
+  resetDateToToday();
+  clearError();
+}
+
+async function onDelete(id) {
+  const entry = cachedEntries.find((e) => e.id === id);
+  const label = entry
+    ? `${formatDate(entry.date)} · ${formatOdometer(entry.odometer)}`
+    : "this entry";
+  if (!confirm(`Delete fuel entry (${label})? This can't be undone.`)) return;
+  try {
+    await deleteEntry(id);
+    if (editingId === id) resetEditMode();
+    await loadEntries();
+  } catch (err) {
+    showError(err.message);
   }
 }
 
@@ -222,22 +347,22 @@ async function onSubmit(event) {
   );
   const volumeGallons = isMetric ? volumeEntered / GAL_TO_L : volumeEntered;
 
-  const submitButton = els.form.querySelector("button[type=submit]");
-  submitButton.disabled = true;
+  const body = {
+    date,
+    odometer: odometerMiles,
+    volume: volumeGallons,
+    notes: notes || null,
+  };
 
+  els.submitBtn.disabled = true;
   try {
-    await postEntry({
-      date,
-      odometer: odometerMiles,
-      volume: volumeGallons,
-      notes: notes || null,
-    });
-    els.form.reset();
-    resetDateToToday();
+    if (editingId) await updateEntry(editingId, body);
+    else await postEntry(body);
+    resetEditMode();
     await loadEntries();
   } catch (err) {
     showError(err.message);
   } finally {
-    submitButton.disabled = false;
+    els.submitBtn.disabled = false;
   }
 }

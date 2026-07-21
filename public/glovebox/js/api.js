@@ -29,6 +29,8 @@ const jsonBody = (method, body) => ({
 // Fuel
 export const getEntries = () => req("/entries");
 export const postEntry = (body) => req("/entries", jsonBody("POST", body));
+export const updateEntry = (id, body) => req(`/entries/${id}`, jsonBody("PUT", body));
+export const deleteEntry = (id) => req(`/entries/${id}`, { method: "DELETE" });
 
 // Account
 export const getMe = () => req("/me");
@@ -45,3 +47,9 @@ export const putInsurance = (body) => req("/insurance", jsonBody("PUT", body));
 
 // Vehicle (used from Phase B on)
 export const getVehicle = () => req("/vehicle");
+
+// Charging (v2.1)
+export const getCharging = () => req("/charging");
+export const createCharging = (body) => req("/charging", jsonBody("POST", body));
+export const updateCharging = (id, body) => req(`/charging/${id}`, jsonBody("PUT", body));
+export const deleteCharging = (id) => req(`/charging/${id}`, { method: "DELETE" });

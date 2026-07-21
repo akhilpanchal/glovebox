@@ -452,6 +452,37 @@ textarea {
   margin-top: 0.65rem;
 }
 
+/* Edit/delete icon buttons on every log history row */
+.item-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--input-bg);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.icon-action:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.icon-action.icon-danger:hover {
+  color: var(--error);
+  border-color: var(--error);
+}
+
 /* --- Maintenance form --- */
 .maint-form {
   gap: 1rem;
@@ -679,6 +710,20 @@ textarea {
   background: transparent;
   border: none;
   box-shadow: none;
+  align-self: center;
+}
+
+/* Decimal point between the whole-number and fractional digit tiles */
+.dash-dot {
+  align-self: stretch;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 2px 0.7rem;
+  font-family: var(--mono);
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
 }
 
 .dash-empty {
@@ -692,6 +737,45 @@ textarea {
   margin-top: 0.85rem;
   font-size: 0.8rem;
   color: var(--muted);
+}
+
+/* Gas/Charge segmented control on the Fuel & Charging tab */
+.segment {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.segment-btn {
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.segment-btn.active {
+  background: var(--card-bg);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.log-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.log-panel[hidden] {
+  display: none;
 }
 
 .card h2 {
@@ -735,7 +819,7 @@ textarea {
   position: relative;
 }
 
-.date-field-wrap input#date {
+.date-field-wrap input[type="date"] {
   color: transparent;
   caret-color: transparent;
 }
