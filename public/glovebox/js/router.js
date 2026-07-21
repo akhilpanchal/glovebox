@@ -2,7 +2,7 @@
 // load() runs once, on first activation (lazy fetch). No framework.
 
 const routes = new Map(); // hash -> { section, load, loaded }
-const DEFAULT_HASH = "#/fuel";
+const DEFAULT_HASH = "#/log";
 
 let appEl;
 let navEl;

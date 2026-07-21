@@ -2,17 +2,37 @@ import { getCharging, createCharging, deleteCharging } from "./api.js";
 import { currentUnits, MI_TO_KM, formatOdometer, onUnitsChange } from "./units.js";
 import { formatDate, todayIsoDate, escapeHtml } from "./format.js";
 
+// The charge form + history live inline in the "Charge" segment of the
+// Fuel & Charging tab (no separate tab, no add button — mirrors the fuel form).
+
 let entries = [];
 const els = {};
 
 export function initCharging() {
   els.list = document.getElementById("charge-list");
-  els.formWrap = document.getElementById("charge-form-wrap");
-  els.addBtn = document.getElementById("charge-add-btn");
+  els.form = document.getElementById("charge-form");
+  els.formError = document.getElementById("charge-form-error");
+  els.date = document.getElementById("charge-date");
+  els.dateDisplay = document.getElementById("charge-date-display");
+  els.odometer = document.getElementById("charge-odometer");
+  els.odoLabel = document.getElementById("charge-odo-label");
+  els.kwh = document.getElementById("charge-kwh");
+  els.miles = document.getElementById("charge-miles");
+  els.milesLabel = document.getElementById("charge-miles-label");
+  els.notes = document.getElementById("charge-notes");
 
-  els.addBtn.addEventListener("click", openForm);
+  els.date.addEventListener("input", updateDateDisplay);
+  els.date.addEventListener("change", updateDateDisplay);
+  els.date.value = todayIsoDate();
+  updateDateDisplay();
+  applyLabels();
+
+  els.form.addEventListener("submit", onSubmit);
   els.list.addEventListener("click", onListClick);
-  onUnitsChange(() => renderList());
+  onUnitsChange(() => {
+    applyLabels();
+    renderList();
+  });
 }
 
 export function loadCharging() {
@@ -31,10 +51,10 @@ async function loadEntries() {
   }
 }
 
-// --- units helpers for the distance fields --------------------------------
+// --- date + units -------------------------------------------------------
 
-function distToDisplay(miles) {
-  return currentUnits() === "metric" ? Math.round(miles * MI_TO_KM) : Math.round(miles);
+function updateDateDisplay() {
+  els.dateDisplay.textContent = els.date.value ? formatDate(els.date.value) : "";
 }
 
 function distToMiles(displayValue) {
@@ -43,19 +63,16 @@ function distToMiles(displayValue) {
   return currentUnits() === "metric" ? Math.round(n / MI_TO_KM) : Math.round(n);
 }
 
-function odoLabel() {
-  return currentUnits() === "metric" ? "Odometer (km)" : "Odometer (mi)";
+function applyLabels() {
+  els.odoLabel.textContent =
+    currentUnits() === "metric" ? "Odometer (km)" : "Odometer (mi)";
+  els.milesLabel.textContent =
+    currentUnits() === "metric"
+      ? "Range added — km (ChargePoint)"
+      : "Miles added (ChargePoint)";
 }
 
-function milesAddedLabel() {
-  return currentUnits() === "metric" ? "Range added (km, from ChargePoint)" : "Miles added (from ChargePoint)";
-}
-
-function attr(value) {
-  return escapeHtml(String(value ?? "")).replace(/"/g, "&quot;");
-}
-
-// --- list -----------------------------------------------------------------
+// --- list ---------------------------------------------------------------
 
 function renderList() {
   if (!entries.length) {
@@ -104,79 +121,32 @@ async function onDelete(id) {
   }
 }
 
-// --- form (add-only) ------------------------------------------------------
+// --- submit -------------------------------------------------------------
 
-function openForm() {
-  els.formWrap.innerHTML = `
-    <form id="charge-form" class="maint-form">
-      <div class="field">
-        <label for="charge-date">Date</label>
-        <input type="date" id="charge-date" name="date" />
-      </div>
-      <div class="field">
-        <label for="charge-odometer" id="charge-odo-label">${odoLabel()}</label>
-        <input type="number" id="charge-odometer" name="odometer" min="0" step="1" inputmode="numeric" />
-      </div>
-      <div class="field">
-        <label for="charge-kwh">kWh delivered</label>
-        <input type="number" id="charge-kwh" name="kwh" min="0" step="0.01" inputmode="decimal" />
-      </div>
-      <div class="field">
-        <label for="charge-miles" id="charge-miles-label">${milesAddedLabel()}</label>
-        <input type="number" id="charge-miles" name="miles_added" min="0" step="1" inputmode="numeric" />
-      </div>
-      <div class="field">
-        <label for="charge-notes">Notes (optional)</label>
-        <textarea id="charge-notes" name="notes" rows="2"></textarea>
-      </div>
-      <div class="form-actions">
-        <button type="submit">Add charge</button>
-        <button type="button" id="charge-cancel" class="btn-secondary">Cancel</button>
-      </div>
-      <p id="charge-form-error" class="error" role="alert" aria-live="polite" hidden></p>
-    </form>`;
-  els.formWrap.hidden = false;
-  els.addBtn.hidden = true;
-
-  els.formWrap.querySelector("#charge-date").value = todayIsoDate();
-  els.formWrap.querySelector("#charge-cancel").addEventListener("click", closeForm);
-  els.formWrap.querySelector("#charge-form").addEventListener("submit", onSubmit);
-  els.formWrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
-}
-
-function closeForm() {
-  els.formWrap.hidden = true;
-  els.formWrap.innerHTML = "";
-  els.addBtn.hidden = false;
+function showError(message) {
+  els.formError.textContent = message;
+  els.formError.hidden = false;
 }
 
 async function onSubmit(event) {
   event.preventDefault();
-  const form = event.currentTarget;
-  const errEl = form.querySelector("#charge-form-error");
-  const setErr = (m) => {
-    errEl.textContent = m;
-    errEl.hidden = false;
-  };
-  errEl.hidden = true;
+  els.formError.hidden = true;
 
-  const date = form.querySelector("#charge-date").value || todayIsoDate();
+  const date = els.date.value || todayIsoDate();
 
-  const odoRaw = form.querySelector("#charge-odometer").value;
-  if (odoRaw === "") return setErr("Odometer is required.");
-  const odometer = distToMiles(odoRaw);
-  if (!Number.isFinite(odometer)) return setErr("Odometer must be a number.");
+  if (els.odometer.value === "") return showError("Odometer is required.");
+  const odometer = distToMiles(els.odometer.value);
+  if (!Number.isFinite(odometer)) return showError("Odometer must be a number.");
 
-  const kwhRaw = form.querySelector("#charge-kwh").value;
-  if (kwhRaw === "") return setErr("kWh is required.");
-  const kwh = Number(kwhRaw);
-  if (!Number.isFinite(kwh) || kwh <= 0) return setErr("kWh must be a positive number.");
+  if (els.kwh.value === "") return showError("kWh is required.");
+  const kwh = Number(els.kwh.value);
+  if (!Number.isFinite(kwh) || kwh <= 0)
+    return showError("kWh must be a positive number.");
 
   let milesAdded = null;
-  const milesRaw = form.querySelector("#charge-miles").value;
-  if (milesRaw !== "") {
-    const m = distToMiles(milesRaw);
-    if (!Number.isFinite(m)) return setErr("Miles added must be a number.");
+  if (els.miles.value !== "") {
+    const m = distToMiles(els.miles.value);
+    if (!Number.isFinite(m)) return showError("Miles added must be a number.");
     milesAdded = m;
   }
 
@@ -185,17 +155,20 @@ async function onSubmit(event) {
     odometer,
     kwh,
     miles_added: milesAdded,
-    notes: form.querySelector("#charge-notes").value.trim() || null,
+    notes: els.notes.value.trim() || null,
   };
 
-  const submitBtn = form.querySelector('button[type="submit"]');
+  const submitBtn = els.form.querySelector('button[type="submit"]');
   submitBtn.disabled = true;
   try {
     await createCharging(body);
-    closeForm();
+    els.form.reset();
+    els.date.value = todayIsoDate();
+    updateDateDisplay();
     await loadEntries();
   } catch (err) {
-    setErr(err.message);
+    showError(err.message);
+  } finally {
     submitBtn.disabled = false;
   }
 }
