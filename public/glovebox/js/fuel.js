@@ -164,15 +164,16 @@ function renderEfficiencyDash() {
   const unitLabel = isMetric ? "KM/L" : "MPG";
 
   const [whole, decimal] = displayValue.split(".");
-  const digitTiles = whole
-    .split("")
-    .map((ch) => `<span class="dash-digit">${ch}</span>`)
-    .join("");
+  const tile = (ch) => `<span class="dash-digit">${ch}</span>`;
+  const wholeTiles = whole.split("").map(tile).join("");
+  const decimalTiles = decimal.split("").map(tile).join("");
 
   els.dashValue.innerHTML = `
     <div class="dash-digits">
-      ${digitTiles}
-      <span class="dash-digit dash-digit-unit">.${decimal} ${unitLabel}</span>
+      ${wholeTiles}
+      <span class="dash-dot">.</span>
+      ${decimalTiles}
+      <span class="dash-digit-unit">${unitLabel}</span>
     </div>`;
 
   els.dashSub.textContent = buildDashSub(result, isMetric);

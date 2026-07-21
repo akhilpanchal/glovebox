@@ -679,6 +679,20 @@ textarea {
   background: transparent;
   border: none;
   box-shadow: none;
+  align-self: center;
+}
+
+/* Decimal point between the whole-number and fractional digit tiles */
+.dash-dot {
+  align-self: stretch;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 2px 0.7rem;
+  font-family: var(--mono);
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent);
 }
 
 .dash-empty {
