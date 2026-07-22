@@ -93,14 +93,19 @@ function renderItem(e) {
     .map((c) => `<span class="cat-chip">${escapeHtml(c)}</span>`)
     .join("");
 
+  // The work-performed list is the centerpiece of the card. No-charge items
+  // (warranty / internal) render as a muted "No charge" rather than a stark $0.00.
   const lines = (e.line_items || []).length
     ? `<ul class="li-list">${e.line_items
-        .map(
-          (li) =>
-            `<li><span>${escapeHtml(li.description)}</span><span class="hi-mono">${money(
-              li.cost
-            )}</span></li>`
-        )
+        .map((li) => {
+          const cost =
+            Number(li.cost) === 0
+              ? `<span class="li-free">No charge</span>`
+              : `<span class="hi-mono">${money(li.cost)}</span>`;
+          return `<li><span class="li-desc-text">${escapeHtml(
+            li.description
+          )}</span>${cost}</li>`;
+        })
         .join("")}</ul>`
     : "";
 
@@ -115,9 +120,13 @@ function renderItem(e) {
         .join("")}</div>`
     : "";
 
-  const notes = e.notes ? `<div class="hi-notes">${escapeHtml(e.notes)}</div>` : "";
+  // Notes are secondary — collapsed by default so a long note never dominates.
+  const notes = e.notes
+    ? `<details class="maint-notes"><summary>Notes</summary><div class="hi-notes">${escapeHtml(
+        e.notes
+      )}</div></details>`
+    : "";
   const shop = e.shop_name ? ` · ${escapeHtml(e.shop_name)}` : "";
-  const invoice = e.invoice_number ? ` · #${escapeHtml(e.invoice_number)}` : "";
 
   return `
     <li class="history-item maint-item">
@@ -125,7 +134,7 @@ function renderItem(e) {
         <div class="hi-odo">${formatOdometer(e.odometer)}</div>
         <div class="maint-cost hi-mono">${money(e.total_cost)}</div>
       </div>
-      <div class="hi-meta">${formatDate(e.date)}${shop}${invoice}</div>
+      <div class="hi-meta">${formatDate(e.date)}${shop}</div>
       ${cats ? `<div class="maint-cats">${cats}</div>` : ""}
       ${lines}
       ${docs}
