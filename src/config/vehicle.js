@@ -7,7 +7,9 @@ export const VEHICLE = {
   model: "Clarity",
   trim: "PHEV Touring",
   color: "Gray",
-  vin: "",
+  vin: "JHMZC5F33KC005237",
   license_plate: "8NNK865",
-  purchase_date: "", // YYYY-MM-DD
+  in_service_date: "2019-10-01", // first retail delivery (Carfax PDI, 3 mi); starts Honda warranty/bulletin clocks
+  purchase_date: "2023-04-07", // YYYY-MM-DD; bought pre-owned at 27,378 mi from Lexus of Oxnard
+  purchase_odometer: 27378, // miles at purchase; previous owner's records run 0–27,215 mi (see Carfax)
 };

@@ -161,7 +161,21 @@ Include every category that applies to the visit. If nothing fits, use `Other`.
   in the generated Markdown/HTML summary (files 1 and 2), not in the app. The app
   card is a compact index; the summary document is the full record.
 - `document_urls` is **always** `[]` — the user attaches photo links in the app.
+- **Never emit a backslash anywhere in the JSON.** No `\"`, no `\\`, no `\n`. The
+  chat renders as Markdown, which silently eats the backslash before a quote —
+  so `2/32\"` arrives in the paste box as `2/32"`, which terminates the string
+  early and makes the whole object unparseable. Write `2/32 inch`, `8 mm`,
+  `35 psi` instead of using `"` as an inch mark, and never use a double quote
+  inside a string value. Apostrophes (`'`), em-dashes and other Unicode are safe.
 - The final message is **only** the JSON object.
+
+### Also write the JSON to a file
+
+Alongside the two summaries, write the same object to
+`maintenance-import-<YYYY-MM-DD>.json` in the source directory. Copying from a
+file is lossless; copying JSON out of a terminal is not. Tell the user the path
+so they can paste from there if the chat copy misbehaves. The final chat message
+still contains the JSON, unchanged.
 
 ### Example output
 
