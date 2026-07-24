@@ -13,6 +13,7 @@ function hydrate(row) {
   return {
     ...row,
     categories: parseJson(row.categories, []),
+    service_items: parseJson(row.service_items, []),
     line_items: parseJson(row.line_items, []),
     document_urls: parseJson(row.document_urls, []),
   };

@@ -416,6 +416,33 @@ textarea {
   padding: 0.15rem 0.55rem;
 }
 
+/* Canonical maintenance-item tags (service_items) — deliberately a different
+   visual language than .cat-chip: mono lowercase slugs, outlined (no fill),
+   muted, wrench-marked, so the due-ness taxonomy never blurs with categories. */
+.svc-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+.svc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.68rem;
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 5px;
+  padding: 0.12rem 0.45rem;
+}
+.svc-chip svg {
+  color: var(--muted);
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
 /* The work-performed list is the primary content of a maintenance card. */
 .li-list {
   list-style: none;

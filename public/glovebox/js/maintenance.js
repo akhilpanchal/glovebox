@@ -6,7 +6,7 @@ import {
 } from "./api.js";
 import { currentUnits, MI_TO_KM, formatOdometer, onUnitsChange } from "./units.js";
 import { formatDate, todayIsoDate, escapeHtml } from "./format.js";
-import { itemActions } from "./icons.js";
+import { itemActions, ICON_WRENCH } from "./icons.js";
 
 // Mirrors the backend vocabulary in src/handlers/maintenance.js.
 const CATEGORIES = [
@@ -93,6 +93,17 @@ function renderItem(e) {
     .map((c) => `<span class="cat-chip">${escapeHtml(c)}</span>`)
     .join("");
 
+  // Canonical maintenance items (feed the due-ness engine). Rendered in a
+  // deliberately different visual language than the category word-chips above:
+  // mono, lowercase slugs, outlined, wrench-marked.
+  const svcItems = (e.service_items || [])
+    .map(
+      (s) =>
+        `<span class="svc-chip">${ICON_WRENCH}${escapeHtml(s)}</span>`
+    )
+    .join("");
+  const svc = svcItems ? `<div class="svc-row">${svcItems}</div>` : "";
+
   // The work-performed list is the centerpiece of the card. No-charge items
   // (warranty / internal) render as a muted "No charge" rather than a stark $0.00.
   const lines = (e.line_items || []).length
@@ -136,6 +147,7 @@ function renderItem(e) {
       </div>
       <div class="hi-meta">${formatDate(e.date)}${shop}</div>
       ${cats ? `<div class="maint-cats">${cats}</div>` : ""}
+      ${svc}
       ${lines}
       ${docs}
       ${notes}
