@@ -20,6 +20,7 @@ import {
   updateCharging,
   deleteCharging,
 } from "./handlers/charging.js";
+import { postChat } from "./handlers/chat.js";
 
 const API_PREFIX = "/glovebox/api";
 
@@ -82,6 +83,11 @@ export default {
       if (route === "/charging") {
         if (method === "GET") return getCharging(env);
         if (method === "POST") return createCharging(request, env);
+        return json({ error: "Method not allowed" }, 405);
+      }
+
+      if (route === "/chat") {
+        if (method === "POST") return postChat(request, env);
         return json({ error: "Method not allowed" }, 405);
       }
 

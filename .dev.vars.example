@@ -8,3 +8,9 @@
 # header is always set by Access, so this variable should never be needed
 # there and should not be configured as a production secret.
 LOCAL_DEV_EMAIL="you@example.com"
+
+# ANTHROPIC_API_KEY powers the v3 maintenance chat agent (POST /glovebox/api/chat).
+# Locally, put your key here to test the agent end-to-end. In production it is a
+# Cloudflare secret, NOT a var: set it with `wrangler secret put ANTHROPIC_API_KEY`.
+# If unset, the chat endpoint returns 503 (the rest of the app is unaffected).
+ANTHROPIC_API_KEY="sk-ant-..."
