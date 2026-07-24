@@ -59,6 +59,14 @@ instead of relying on prose. Today `added_by = 'carfax-import'` marks provenance
 doesn't encode *which* owner. A small ownership map would let the app/agent say
 "Owner 1: 2019-10 → 2023-04, 3–27,215 mi" deterministically.
 
+**Dependency captured — v3 price-fairness (2026-07-23):** the market-rate feature needs a
+*current-owner location*: a default zip (currently **94070**) that anchors the web-search
+price lookups and is announced at the top of each answer. This is owner-current state and
+drifts (the owner moved from 94086 → 94070); it is distinct from vehicle state and from
+frozen purchase-doc facts, which correctly keep the old 94086 address. v3.0 will stub it as
+a `DEFAULT_ZIP` config constant; its proper home is the ownership model above. First
+functional consumer of this story — not purely cosmetic.
+
 **Acceptance criteria:**
 
 - [ ] An owner-labeling convention is written down (ordinal, Carfax/registration-ordered)
@@ -75,6 +83,8 @@ doesn't encode *which* owner. A small ownership map would let the app/agent say
       - `Purchase Documents/purchase-summary-2023-04-07.md` / `.html`
       - `src/config/vehicle.js` (comment: "previous owner's records")
 - [ ] The `maintenance-extract` skill and the v3 agent prompt/rules encode the convention.
+- [ ] Current-owner location (the default market-rate zip, today 94070) has a real home in
+      the ownership model — not a stray `DEFAULT_ZIP` constant — once that model exists.
 
 **Notes.** If the seed migration reaches production before this is done, the fix is a
 follow-up migration (or an in-app edit — the rows are ordinary `maintenance_entries`)
@@ -117,6 +127,118 @@ those stay as they are unless a separate story revisits them.
 **Notes.** Pure frontend change (`public/glovebox/`). If a "show cost" toggle is ever
 wanted, the data is still there to switch back on. Relates to GLOV-1 only in spirit
 (both are about what the app chooses to foreground).
+
+---
+
+### GLOV-3 — Surface generated documents inside the app (in-app document library)
+
+- **Status:** Backlog
+- **Priority:** P2
+- **Area:** docs, ui, data
+- **Created:** 2026-07-24
+
+**Problem.** A growing set of generated human-readable artifacts — the purchase
+summary, the Carfax history, the pre-ownership service list, the owner's-manual
+essentials, and one Markdown/HTML summary per service visit — all live **outside the
+repo** in `~/Documents/Honda Clarity/…`. They are the richest records the project has,
+yet the Glovebox UI can't reach any of them. They should be surfaced into a
+well-organized folder **within the app** so the UI can link to and display them
+(this is the first real step toward the long-term "receipts/paperwork" vision in
+CLAUDE.md — do it because it's now actually needed, not speculatively).
+
+**Shape (design, not fixed).** The Worker already serves static assets from
+`public/glovebox/` under the Access-gated `/glovebox*` scope, so a docs folder there
+is automatically private to authenticated family members. Sketch:
+
+- A folder like `public/glovebox/docs/` organized by kind:
+  `purchase/`, `maintenance/` (per-visit summaries), `reference/` (owner-essentials).
+- The HTML artifacts are already self-contained (inlined CSS, no external assets), so
+  they can be served as-is. Confirm they render standalone when moved.
+- **Discovery:** Workers Static Assets has no directory listing, so the UI needs an
+  index — either a small committed `docs/manifest.json` (title, kind, date, path) or
+  an API endpoint — for a "Documents" view to enumerate them.
+- **Linking:** maintenance history cards link to their matching
+  `service-summary-<date>.html`; a vehicle/purchase area links the purchase + Carfax
+  docs; a reference area links owner-essentials.
+
+**Dependencies / cross-links.**
+
+- **PII (GLOV-1) blocks the purchase summary.** That document bakes in the current
+  owner's name, address, and credit score. Surfacing it in-app serves it to everyone
+  with Access — so PII removal must land **before** the purchase summary is exposed.
+  Other docs (maintenance summaries, owner-essentials, Carfax) are safe to surface
+  first.
+- **maintenance-extract skill.** It currently writes summaries into the source-image
+  directory. Decide whether the skill should also emit into `public/glovebox/docs/`
+  (or a copy/sync step), so new visits land in the library automatically instead of
+  being hand-moved.
+
+**Acceptance criteria:**
+
+- [ ] A committed, organized `public/glovebox/docs/` structure exists, with the
+      existing safe artifacts (maintenance summaries, owner-essentials, Carfax) in it.
+- [ ] The UI can enumerate the documents (manifest or endpoint) and open each one.
+- [ ] Maintenance history cards deep-link to their per-visit summary where one exists.
+- [ ] The purchase summary is only added **after** GLOV-1's PII decision is applied.
+- [ ] A decision is recorded on how new service summaries reach the library
+      (skill emits there vs. a manual/scripted copy step).
+
+**Notes.** Everything served this way stays behind Cloudflare Access (`/glovebox*`),
+so it's family-only by default — but treat "in the app" as "shared with everyone who
+has Access," which is exactly why the PII gate above matters.
+
+---
+
+### GLOV-4 — Represent tire replacement as a maintenance item (brand-driven, not manufacturer-scheduled)
+
+- **Status:** Backlog
+- **Priority:** P2
+- **Area:** data, agent, docs
+- **Created:** 2026-07-24
+
+**Problem.** The `service_items` taxonomy (the 9 canonical items from the Honda
+Maintenance Minder) has **no concept of a tire *replacement*** — only `tire_rotation`.
+So a major maintenance event like the Oct 2024 visit (all four tires replaced with
+Goodyear Eagle LS2) currently carries **no service-item tag**, and the due-ness engine
+has no way to reason about "when are the tires due for replacement?"
+
+**Why it doesn't fit the existing model.** Every current due-ness item comes from the
+**owner's manual / Honda schedule** — a fixed interval tied to the *vehicle*. Tire
+replacement is fundamentally different: its cadence depends on the **fitted tire brand
+and model** (tread-life warranty, e.g. a 50k/60k-mile treadwear rating), driving style,
+and measured **tread depth** — none of which live in the owner's manual and none of
+which are properties of the car. It's a real maintenance need, but a **different *kind*
+of due-ness** (consumable-wear / product-warranty based, not manufacturer-interval
+based). Forcing it into `manual.js` would be wrong.
+
+**Things to think through (not decisions):**
+
+- A distinct item type, e.g. `tires_replacement`, whose "interval" comes from the
+  **installed tire's** treadwear/warranty mileage (captured at install time), not from
+  the vehicle manual.
+- Whether due-ness for it is **tread-based** (inspections record tread depth — e.g. the
+  Jul 2026 visit logged 7/32 front, 6/32 rear; California legal minimum 2/32) rather
+  than pure mileage, and whether the agent should reason from the tread trend.
+- Where the tire's brand/model/warranty gets recorded — a new field on the install
+  entry? a small `tires` concept? — and how the agent picks the *current* set after a
+  replacement resets the clock.
+- The agent's source hierarchy here is **web-first** (tire model reviews, treadwear
+  ratings, local pricing) — closer to the price-fairness path than the manual-first
+  due-ness path.
+
+**Acceptance criteria (for when this is picked up):**
+
+- [ ] A decision on how tire replacement is represented (item type + where brand/tread
+      data lives), written down.
+- [ ] The due-ness engine can answer "are the tires due for replacement?" using
+      tread/warranty data, clearly flagged as brand-driven (not a Honda interval).
+- [ ] The Oct 2024 four-tire replacement entry is taggable/attributable under the new
+      model (retro-tag the existing row).
+
+**Notes.** Out of scope for now (raised 2026-07-24 during the C' tagging review). The
+current `service_items` backfill deliberately leaves tire-replacement visits untagged
+rather than mislabel them. Relates to the v3 due-ness engine and, in spirit, to the
+web-first price-fairness path.
 
 ---
 
