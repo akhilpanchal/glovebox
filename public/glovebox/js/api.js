@@ -48,6 +48,9 @@ export const putInsurance = (body) => req("/insurance", jsonBody("PUT", body));
 // Vehicle (used from Phase B on)
 export const getVehicle = () => req("/vehicle");
 
+// Ask — v3 chat agent. Send the running transcript, get back { reply }.
+export const postChat = (messages) => req("/chat", jsonBody("POST", { messages }));
+
 // Charging (v2.1)
 export const getCharging = () => req("/charging");
 export const createCharging = (body) => req("/charging", jsonBody("POST", body));

@@ -74,6 +74,7 @@
 
     <div class="app-body">
       <nav class="side-nav" id="side-nav" aria-label="Sections">
+        <a href="#/ask" class="nav-item" data-route="#/ask">Ask</a>
         <a href="#/log" class="nav-item" data-route="#/log">Fuel &amp; Charging</a>
         <a href="#/maintenance" class="nav-item" data-route="#/maintenance">Maintenance</a>
         <a href="#/insurance" class="nav-item" data-route="#/insurance">Insurance</a>
@@ -215,6 +216,25 @@
         <section class="route" id="route-vehicle" data-route="#/vehicle" hidden>
           <section class="card">
             <p class="placeholder-note">Loading…</p>
+          </section>
+        </section>
+
+        <section class="route" id="route-ask" data-route="#/ask" hidden>
+          <section class="card ask-card">
+            <div class="ask-log" id="ask-log" aria-live="polite"></div>
+            <form class="ask-form" id="ask-form">
+              <textarea
+                id="ask-input"
+                class="ask-input"
+                rows="1"
+                placeholder="Ask about your car…"
+                aria-label="Ask a question about your car"
+              ></textarea>
+              <button type="submit" id="ask-send" class="ask-send" aria-label="Send">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+              </button>
+            </form>
+            <p id="ask-error" class="error" role="alert" aria-live="polite" hidden></p>
           </section>
         </section>
       </main>

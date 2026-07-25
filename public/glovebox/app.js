@@ -9,6 +9,7 @@ import { initVehicle, loadVehicle } from "./js/vehicle.js";
 import { initMaintenance, loadMaintenance } from "./js/maintenance.js";
 import { initInsurance, loadInsurance } from "./js/insurance.js";
 import { initCharging, loadCharging } from "./js/charging.js";
+import { initChat, loadChat } from "./js/chat.js";
 
 initTheme(document.getElementById("theme-toggle"));
 initUnitsToggle(document.getElementById("units-toggle"));
@@ -34,6 +35,13 @@ initVehicle(
 initMaintenance();
 initInsurance(document.getElementById("insurance-body"));
 initCharging();
+initChat({
+  log: document.getElementById("ask-log"),
+  form: document.getElementById("ask-form"),
+  input: document.getElementById("ask-input"),
+  send: document.getElementById("ask-send"),
+  error: document.getElementById("ask-error"),
+});
 initSegment();
 
 // The Fuel & Charging tab (default, #/log) holds both the fuel and charging
@@ -45,6 +53,7 @@ registerRoute("#/log", document.getElementById("route-log"), () => {
 registerRoute("#/maintenance", document.getElementById("route-maintenance"), loadMaintenance);
 registerRoute("#/insurance", document.getElementById("route-insurance"), loadInsurance);
 registerRoute("#/vehicle", document.getElementById("route-vehicle"), loadVehicle);
+registerRoute("#/ask", document.getElementById("route-ask"), loadChat);
 
 startRouter();
 
