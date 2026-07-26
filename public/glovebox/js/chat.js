@@ -12,7 +12,7 @@ const SUGGESTIONS = [
   "What maintenance is coming up?",
 ];
 
-let els = null; // { log, form, input, send, error }
+let els = null; // { log, form, input, send, error, status }
 let messages = []; // [{ role: "user" | "assistant", content }]
 let pending = false; // awaiting a reply → show the thinking bubble, lock input
 
@@ -71,7 +71,7 @@ function render() {
         <div class="empty-state-icon">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
         </div>
-        <p class="ask-empty-title">Ask about your car</p>
+        <h2 class="ask-empty-title">Ask about your car</h2>
         <p class="ask-empty-sub">Maintenance history, whether a service is due, what it should cost.</p>
         <div class="ask-suggestions">${chips}</div>
       </div>`;
@@ -85,7 +85,7 @@ function render() {
   );
   if (pending) {
     parts.push(
-      `<div class="ask-msg ask-assistant"><div class="ask-bubble ask-thinking"><span></span><span></span><span></span></div></div>`
+      `<div class="ask-msg ask-assistant"><div class="ask-bubble ask-thinking" aria-hidden="true"><span></span><span></span><span></span></div></div>`
     );
   }
   els.log.innerHTML = parts.join("");
@@ -93,13 +93,25 @@ function render() {
 }
 
 function showError(message) {
-  els.error.textContent = message;
+  els.error.innerHTML = `<span>${escapeHtml(
+    message || "The assistant is unavailable right now."
+  )}</span> <button type="button" class="ask-retry">Retry</button>`;
   els.error.hidden = false;
+  els.error.querySelector(".ask-retry").addEventListener("click", retry);
 }
 
 function clearError() {
   els.error.hidden = true;
-  els.error.textContent = "";
+  els.error.innerHTML = "";
+}
+
+// Re-send the last (unanswered) user turn after a failed request.
+function retry() {
+  if (pending) return;
+  if (messages.length && messages[messages.length - 1].role === "user") {
+    clearError();
+    runTurn();
+  }
 }
 
 // --- sending ----------------------------------------------------------------
@@ -111,16 +123,26 @@ async function send(text) {
   clearError();
   messages.push({ role: "user", content });
   save();
+  await runTurn();
+}
+
+// Post the current transcript and append the reply. Split out from send() so a
+// failed request can be retried without pushing the user's turn again.
+async function runTurn() {
   pending = true;
   updateLock();
+  els.status.textContent = "Thinking…"; // SR announcement while the request runs
   render();
 
   try {
     const { reply } = await postChat(messages);
-    messages.push({ role: "assistant", content: reply || "(no response)" });
+    const answer = reply || "(no response)";
+    messages.push({ role: "assistant", content: answer });
     save();
+    els.status.textContent = answer; // announce only the new reply, not the whole log
   } catch (err) {
-    showError(err.message || "The assistant is unavailable right now.");
+    els.status.textContent = "";
+    showError(err.message);
   } finally {
     pending = false;
     updateLock();
@@ -131,7 +153,13 @@ async function send(text) {
 
 function updateLock() {
   els.input.disabled = pending;
-  els.send.disabled = pending;
+  updateSendState();
+}
+
+// The send button reflects whether there's anything to send (and isn't mid-request),
+// so it never looks tappable while the input is empty.
+function updateSendState() {
+  els.send.disabled = pending || !els.input.value.trim();
 }
 
 // --- textarea behavior ------------------------------------------------------
@@ -143,9 +171,10 @@ function autoGrow() {
 
 // --- wiring -----------------------------------------------------------------
 
-export function initChat({ log, form, input, send: sendBtn, error }) {
-  els = { log, form, input, send: sendBtn, error };
+export function initChat({ log, form, input, send: sendBtn, error, status }) {
+  els = { log, form, input, send: sendBtn, error, status };
   load();
+  updateSendState(); // start disabled — nothing typed yet
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -163,7 +192,10 @@ export function initChat({ log, form, input, send: sendBtn, error }) {
     }
   });
 
-  input.addEventListener("input", autoGrow);
+  input.addEventListener("input", () => {
+    autoGrow();
+    updateSendState();
+  });
 
   // Suggestion chips (event-delegated — they're re-rendered).
   log.addEventListener("click", (e) => {

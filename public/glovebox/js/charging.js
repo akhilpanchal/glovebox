@@ -79,8 +79,8 @@ function applyLabels() {
     currentUnits() === "metric" ? "Odometer (km)" : "Odometer (mi)";
   els.milesLabel.textContent =
     currentUnits() === "metric"
-      ? "Range added — km (ChargePoint)"
-      : "Miles added (ChargePoint)";
+      ? "Range added — km (optional)"
+      : "Miles added (optional)";
 }
 
 // --- list ---------------------------------------------------------------
@@ -98,14 +98,12 @@ function renderItem(e) {
   const added =
     e.miles_added === null || e.miles_added === undefined
       ? ""
-      : ` · +${formatOdometer(e.miles_added)}`;
+      : ` · <span class="hi-mono">+${formatOdometer(e.miles_added)}</span>`;
   const notes = e.notes ? `<div class="hi-notes">${escapeHtml(e.notes)}</div>` : "";
   return `
     <li class="history-item">
-      <div class="hi-odo">${kwh}</div>
-      <div class="hi-meta">${formatDate(e.date)} · <span class="hi-mono">${formatOdometer(
-        e.odometer
-      )}</span>${added}</div>
+      <div class="hi-odo">${formatOdometer(e.odometer)}</div>
+      <div class="hi-meta">${formatDate(e.date)} · <span class="hi-mono">${kwh}</span>${added}</div>
       ${notes}
       ${itemActions(e.id)}
     </li>`;

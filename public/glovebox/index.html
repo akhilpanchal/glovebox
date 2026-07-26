@@ -109,11 +109,17 @@
           </section>
 
           <div class="segment" role="tablist" aria-label="Log type">
-            <button type="button" class="segment-btn active" id="seg-gas" role="tab" aria-selected="true" data-panel="panel-gas">⛽ Gas</button>
-            <button type="button" class="segment-btn" id="seg-ev" role="tab" aria-selected="false" data-panel="panel-ev">🔌 Charge</button>
+            <button type="button" class="segment-btn active" id="seg-gas" role="tab" aria-selected="true" aria-controls="panel-gas" tabindex="0" data-panel="panel-gas">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="22" x2="15" y2="22"/><line x1="4" y1="9" x2="14" y2="9"/><path d="M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"/><path d="M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 4 0V9.83a2 2 0 0 0-.59-1.42L18 5"/></svg>
+              Gas
+            </button>
+            <button type="button" class="segment-btn" id="seg-ev" role="tab" aria-selected="false" aria-controls="panel-ev" tabindex="-1" data-panel="panel-ev">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              Charge
+            </button>
           </div>
 
-          <div class="log-panel" id="panel-gas">
+          <div class="log-panel" id="panel-gas" role="tabpanel" aria-labelledby="seg-gas" tabindex="0">
 
           <section class="card">
             <h2 id="fuel-form-title">Log a Fill-up</h2>
@@ -128,12 +134,12 @@
 
               <div class="field">
                 <label for="odometer" id="odometer-label">Odometer (mi)</label>
-                <input type="number" id="odometer" name="odometer" min="0" step="1" required inputmode="numeric" />
+                <input type="number" id="odometer" name="odometer" min="0" step="1" required inputmode="numeric" placeholder="e.g. 65,300" />
               </div>
 
               <div class="field">
                 <label for="volume" id="volume-label">Gallons</label>
-                <input type="number" id="volume" name="volume" min="0" step="0.001" required inputmode="decimal" />
+                <input type="number" id="volume" name="volume" min="0" step="0.001" required inputmode="decimal" placeholder="e.g. 9.5" />
               </div>
 
               <div class="field">
@@ -156,7 +162,7 @@
 
           </div><!-- /panel-gas -->
 
-          <div class="log-panel" id="panel-ev" hidden>
+          <div class="log-panel" id="panel-ev" role="tabpanel" aria-labelledby="seg-ev" tabindex="0" hidden>
             <section class="card">
               <h2 id="charge-form-title">Log a Charge</h2>
               <form id="charge-form">
@@ -170,17 +176,18 @@
 
                 <div class="field">
                   <label for="charge-odometer" id="charge-odo-label">Odometer (mi)</label>
-                  <input type="number" id="charge-odometer" name="odometer" min="0" step="1" required inputmode="numeric" />
+                  <input type="number" id="charge-odometer" name="odometer" min="0" step="1" required inputmode="numeric" placeholder="e.g. 65,300" />
                 </div>
 
                 <div class="field">
                   <label for="charge-kwh">kWh delivered</label>
-                  <input type="number" id="charge-kwh" name="kwh" min="0" step="0.01" required inputmode="decimal" />
+                  <input type="number" id="charge-kwh" name="kwh" min="0" step="0.01" required inputmode="decimal" placeholder="e.g. 8.4" />
                 </div>
 
                 <div class="field">
-                  <label for="charge-miles" id="charge-miles-label">Miles added (ChargePoint)</label>
-                  <input type="number" id="charge-miles" name="miles_added" min="0" step="1" inputmode="numeric" />
+                  <label for="charge-miles" id="charge-miles-label">Miles added (optional)</label>
+                  <span class="field-hint">From ChargePoint or your charger's estimate</span>
+                  <input type="number" id="charge-miles" name="miles_added" min="0" step="1" inputmode="numeric" placeholder="e.g. 30" />
                 </div>
 
                 <div class="field">
@@ -232,20 +239,23 @@
 
         <section class="route" id="route-ask" data-route="#/ask" hidden>
           <section class="card ask-card">
-            <div class="ask-log" id="ask-log" aria-live="polite"></div>
+            <div class="ask-log" id="ask-log"></div>
+            <!-- Screen-reader status: announces "Thinking…" and the new reply only,
+                 instead of re-reading the whole transcript on every render. -->
+            <div id="ask-status" class="sr-only" aria-live="polite"></div>
             <form class="ask-form" id="ask-form">
               <textarea
                 id="ask-input"
                 class="ask-input"
                 rows="1"
-                placeholder="Ask about your car…"
+                placeholder="e.g. When is my next oil change due?"
                 aria-label="Ask a question about your car"
               ></textarea>
               <button type="submit" id="ask-send" class="ask-send" aria-label="Send">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
               </button>
             </form>
-            <p id="ask-error" class="error" role="alert" aria-live="polite" hidden></p>
+            <p id="ask-error" class="error" role="alert" hidden></p>
           </section>
         </section>
       </main>

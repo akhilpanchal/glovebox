@@ -27,8 +27,9 @@ const els = {};
 // the same email repeated on every row was clutter and owner-identifying.
 function loggerBadge(email) {
   if (!email) return "";
+  const safe = escapeHtml(email);
   const initial = escapeHtml((email.trim().charAt(0) || "?").toUpperCase());
-  return ` <span class="hi-logger" title="${escapeHtml(email)}">${initial}</span>`;
+  return ` <span class="hi-logger" role="img" title="${safe}" aria-label="Logged by ${safe}">${initial}</span>`;
 }
 
 export function initFuel() {
@@ -164,9 +165,48 @@ function computeEfficiency(entries, charges) {
   };
 }
 
+// Which segment the dashboard reflects — gas MPG or charging mi/kWh. Driven by
+// the Gas/Charge segmented control (app.js calls setDashSegment on switch).
+let dashSegment = "gas";
+
+export function setDashSegment(seg) {
+  dashSegment = seg === "ev" ? "ev" : "gas";
+  renderEfficiencyDash();
+}
+
+// Render the flip-tile display from a "12.3"-style string + a unit label.
+function renderTiles(displayValue, unitLabel) {
+  const [whole, decimal] = displayValue.split(".");
+  const tile = (ch) => `<span class="dash-digit">${ch}</span>`;
+  const wholeTiles = whole.split("").map(tile).join("");
+  const dot = decimal ? `<span class="dash-dot">.</span>` : "";
+  const decimalTiles = (decimal || "").split("").map(tile).join("");
+  return `<div class="dash-digits">${wholeTiles}${dot}${decimalTiles}<span class="dash-digit-unit">${unitLabel}</span></div>`;
+}
+
 function renderEfficiencyDash() {
   const result = computeEfficiency(cachedEntries, cachedCharges);
+  const isMetric = currentUnits() === "metric";
 
+  // Charge segment: show charging efficiency (mi/kWh) as the hero number.
+  if (dashSegment === "ev") {
+    if (els.dashLabel) els.dashLabel.textContent = "Charging Efficiency";
+    if (!result || result.miPerKwh == null) {
+      els.dashValue.innerHTML =
+        '<div class="dash-empty">Log a charge with miles added to see mi/kWh</div>';
+      els.dashSub.textContent = "";
+      return;
+    }
+    const v = isMetric
+      ? (result.miPerKwh * MI_TO_KM).toFixed(1)
+      : result.miPerKwh.toFixed(1);
+    els.dashValue.innerHTML = renderTiles(v, isMetric ? "KM/KWH" : "MI/KWH");
+    const charges = `${result.chargeCount} charge${result.chargeCount !== 1 ? "s" : ""}`;
+    els.dashSub.textContent = `Based on ${charges}`;
+    return;
+  }
+
+  // Gas segment: average fuel economy (MPG / km·L).
   if (els.dashLabel) {
     els.dashLabel.textContent =
       result && result.hasCharging ? "Gas Efficiency" : "Average Efficiency";
@@ -179,25 +219,10 @@ function renderEfficiencyDash() {
     return;
   }
 
-  const isMetric = currentUnits() === "metric";
   const displayValue = isMetric
     ? (result.gasMpg * (MI_TO_KM / GAL_TO_L)).toFixed(1)
     : result.gasMpg.toFixed(1);
-  const unitLabel = isMetric ? "KM/L" : "MPG";
-
-  const [whole, decimal] = displayValue.split(".");
-  const tile = (ch) => `<span class="dash-digit">${ch}</span>`;
-  const wholeTiles = whole.split("").map(tile).join("");
-  const decimalTiles = decimal.split("").map(tile).join("");
-
-  els.dashValue.innerHTML = `
-    <div class="dash-digits">
-      ${wholeTiles}
-      <span class="dash-dot">.</span>
-      ${decimalTiles}
-      <span class="dash-digit-unit">${unitLabel}</span>
-    </div>`;
-
+  els.dashValue.innerHTML = renderTiles(displayValue, isMetric ? "KM/L" : "MPG");
   els.dashSub.textContent = buildDashSub(result, isMetric);
 }
 

@@ -63,6 +63,12 @@ function money(value) {
   return value === null || value === undefined ? "" : `$${Number(value).toFixed(2)}`;
 }
 
+// Turn a due-ness slug ("tire_rotation") into a human label ("Tire rotation").
+function humanizeItem(slug) {
+  const s = String(slug).replace(/_/g, " ").trim();
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 // Escape for use inside a double-quoted HTML attribute.
 function attr(value) {
   return escapeHtml(String(value ?? "")).replace(/"/g, "&quot;");
@@ -82,7 +88,13 @@ function safeUrl(url) {
 
 function renderList() {
   if (!entries.length) {
-    els.list.innerHTML = '<li class="history-empty">No maintenance entries yet.</li>';
+    els.list.innerHTML = `<li class="history-empty"><div class="empty-state">
+      <div class="empty-state-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <h3>No services logged yet</h3>
+      <p>Use “Add service” above to record your first maintenance visit.</p>
+    </div></li>`;
     return;
   }
   els.list.innerHTML = entries.map(renderItem).join("");
@@ -93,13 +105,13 @@ function renderItem(e) {
     .map((c) => `<span class="cat-chip">${escapeHtml(c)}</span>`)
     .join("");
 
-  // Canonical maintenance items (feed the due-ness engine). Rendered in a
-  // deliberately different visual language than the category word-chips above:
-  // mono, lowercase slugs, outlined, wrench-marked.
+  // Canonical maintenance items (feed the due-ness engine). Shown to the human as
+  // friendly labels, not raw snake_case slugs, but kept visually quiet (dashed,
+  // wrench-marked) so they read as secondary to the category chips.
   const svcItems = (e.service_items || [])
     .map(
       (s) =>
-        `<span class="svc-chip">${ICON_WRENCH}${escapeHtml(s)}</span>`
+        `<span class="svc-chip">${ICON_WRENCH}${escapeHtml(humanizeItem(s))}</span>`
     )
     .join("");
   const svc = svcItems ? `<div class="svc-row">${svcItems}</div>` : "";
@@ -139,8 +151,16 @@ function renderItem(e) {
     : "";
   const shop = e.shop_name ? ` · ${escapeHtml(e.shop_name)}` : "";
 
+  // Visually-hidden per-record heading so screen-reader users can jump between
+  // records; the visible header stays plain divs (no layout change).
+  const cost = money(e.total_cost);
+  const srHeading = `${formatOdometer(e.odometer)} — ${formatDate(e.date)}${
+    e.shop_name ? ` at ${escapeHtml(e.shop_name)}` : ""
+  }${cost ? `, ${cost}` : ""}`;
+
   return `
     <li class="history-item maint-item">
+      <h3 class="sr-only">${srHeading}</h3>
       <div class="maint-head">
         <div class="hi-odo">${formatOdometer(e.odometer)}</div>
         <div class="maint-cost hi-mono">${money(e.total_cost)}</div>

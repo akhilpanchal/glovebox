@@ -4,7 +4,7 @@ import { initTheme } from "./js/theme.js";
 import { initUnitsToggle } from "./js/units.js";
 import { initAccount } from "./js/account.js";
 import { initRouter, registerRoute, startRouter } from "./js/router.js";
-import { initFuel, loadFuel } from "./js/fuel.js";
+import { initFuel, loadFuel, setDashSegment } from "./js/fuel.js";
 import { initVehicle, loadVehicle } from "./js/vehicle.js";
 import { initMaintenance, loadMaintenance } from "./js/maintenance.js";
 import { initInsurance, loadInsurance } from "./js/insurance.js";
@@ -41,6 +41,7 @@ initChat({
   input: document.getElementById("ask-input"),
   send: document.getElementById("ask-send"),
   error: document.getElementById("ask-error"),
+  status: document.getElementById("ask-status"),
 });
 initSegment();
 
@@ -66,18 +67,39 @@ function initSegment() {
   const panelGas = document.getElementById("panel-gas");
   const panelEv = document.getElementById("panel-ev");
 
+  function setTab(btn, active) {
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", String(active));
+    btn.tabIndex = active ? 0 : -1; // roving tabindex for the tablist
+  }
+
   function select(segment) {
     const gas = segment !== "ev";
     panelGas.hidden = !gas;
     panelEv.hidden = gas;
-    gasBtn.classList.toggle("active", gas);
-    evBtn.classList.toggle("active", !gas);
-    gasBtn.setAttribute("aria-selected", String(gas));
-    evBtn.setAttribute("aria-selected", String(!gas));
+    setTab(gasBtn, gas);
+    setTab(evBtn, !gas);
     localStorage.setItem(KEY, gas ? "gas" : "ev");
+    setDashSegment(gas ? "gas" : "ev"); // dashboard reflects the active segment
   }
 
   gasBtn.addEventListener("click", () => select("gas"));
   evBtn.addEventListener("click", () => select("ev"));
+
+  // Arrow-key navigation between the two tabs (WAI-ARIA tabs pattern).
+  for (const btn of [gasBtn, evBtn]) {
+    btn.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        select("ev");
+        evBtn.focus();
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        select("gas");
+        gasBtn.focus();
+      }
+    });
+  }
+
   select(localStorage.getItem(KEY) === "ev" ? "ev" : "gas");
 }
