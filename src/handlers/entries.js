@@ -1,5 +1,6 @@
 import { json } from "../lib/responses.js";
 import { authedEmail } from "../lib/auth.js";
+import { isYmd, positiveInt, positiveNumber, text } from "../lib/validate.js";
 
 export async function getEntries(env) {
   const { results } = await env.DB.prepare(
@@ -26,31 +27,23 @@ export async function postEntry(request, env) {
 
   const { date, odometer, volume, notes } = body;
 
-  if (
-    !date ||
-    odometer === undefined ||
-    odometer === null ||
-    volume === undefined ||
-    volume === null
-  ) {
-    return json(
-      { error: "Missing required fields: date, odometer, volume" },
-      400
-    );
+  if (!isYmd(date)) {
+    return json({ error: "date is required (YYYY-MM-DD)" }, 400);
   }
-
-  const odometerNum = Number(odometer);
-  const volumeNum = Number(volume);
-
-  if (!Number.isFinite(odometerNum) || !Number.isFinite(volumeNum)) {
-    return json({ error: "odometer and volume must be numbers" }, 400);
+  const odo = positiveInt(odometer);
+  if (!odo.ok) {
+    return json({ error: "odometer must be a positive integer" }, 400);
+  }
+  const vol = positiveNumber(volume);
+  if (!vol.ok) {
+    return json({ error: "volume must be a positive number" }, 400);
   }
 
   const result = await env.DB.prepare(
     `INSERT INTO fuel_entries (date, odometer, volume, added_by, notes)
      VALUES (?, ?, ?, ?, ?)`
   )
-    .bind(date, odometerNum, volumeNum, addedBy, notes || null)
+    .bind(date, odo.value, vol.value, addedBy, text(notes))
     .run();
 
   const insertedId = result.meta.last_row_id;
@@ -78,27 +71,22 @@ export async function updateEntry(request, env, id) {
 
   const { date, odometer, volume, notes } = body;
 
-  if (
-    !date ||
-    odometer === undefined ||
-    odometer === null ||
-    volume === undefined ||
-    volume === null
-  ) {
-    return json({ error: "Missing required fields: date, odometer, volume" }, 400);
+  if (!isYmd(date)) {
+    return json({ error: "date is required (YYYY-MM-DD)" }, 400);
   }
-
-  const odometerNum = Number(odometer);
-  const volumeNum = Number(volume);
-
-  if (!Number.isFinite(odometerNum) || !Number.isFinite(volumeNum)) {
-    return json({ error: "odometer and volume must be numbers" }, 400);
+  const odo = positiveInt(odometer);
+  if (!odo.ok) {
+    return json({ error: "odometer must be a positive integer" }, 400);
+  }
+  const vol = positiveNumber(volume);
+  if (!vol.ok) {
+    return json({ error: "volume must be a positive number" }, 400);
   }
 
   const result = await env.DB.prepare(
     `UPDATE fuel_entries SET date = ?, odometer = ?, volume = ?, notes = ? WHERE id = ?`
   )
-    .bind(date, odometerNum, volumeNum, notes || null, id)
+    .bind(date, odo.value, vol.value, text(notes), id)
     .run();
 
   if (result.meta.changes === 0) return json({ error: "Not found" }, 404);

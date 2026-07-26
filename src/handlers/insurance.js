@@ -1,12 +1,7 @@
 import { json } from "../lib/responses.js";
 import { authedEmail } from "../lib/auth.js";
 import { parseJson } from "../lib/columns.js";
-
-function text(value) {
-  if (value === undefined || value === null) return null;
-  const s = String(value).trim();
-  return s === "" ? null : s;
-}
+import { isYmd, text } from "../lib/validate.js";
 
 // Always return a well-shaped object, even before the singleton row exists.
 function hydrate(row) {
@@ -38,12 +33,17 @@ function normalize(body) {
     }
   }
 
+  const expiry = text(body.expiry_date);
+  if (expiry !== null && !isYmd(expiry)) {
+    return { ok: false, error: "expiry_date must be YYYY-MM-DD" };
+  }
+
   return {
     ok: true,
     values: {
       insurer_name: text(body.insurer_name),
       policy_number: text(body.policy_number),
-      expiry_date: text(body.expiry_date),
+      expiry_date: expiry,
       policy_pdf_url: text(body.policy_pdf_url),
       emergency_phones: JSON.stringify(phones),
     },

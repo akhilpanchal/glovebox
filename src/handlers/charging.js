@@ -1,49 +1,34 @@
 import { json } from "../lib/responses.js";
 import { authedEmail } from "../lib/auth.js";
-
-function text(value) {
-  if (value === undefined || value === null) return null;
-  const s = String(value).trim();
-  return s === "" ? null : s;
-}
+import { isYmd, positiveInt, positiveNumber, text } from "../lib/validate.js";
 
 // Validate + normalize a charging-session body. Returns { ok, error } | { ok, values }.
 function normalize(body) {
   if (!body || typeof body !== "object") return { ok: false, error: "Invalid body" };
 
-  if (!body.date || typeof body.date !== "string") {
-    return { ok: false, error: "date is required" };
+  if (!isYmd(body.date)) {
+    return { ok: false, error: "date is required (YYYY-MM-DD)" };
   }
 
-  if (body.odometer === undefined || body.odometer === null || body.odometer === "") {
-    return { ok: false, error: "odometer is required" };
-  }
-  const odometer = Number(body.odometer);
-  if (!Number.isFinite(odometer)) {
-    return { ok: false, error: "odometer must be a number" };
-  }
+  const odo = positiveInt(body.odometer);
+  if (!odo.ok) return { ok: false, error: "odometer must be a positive integer" };
 
-  if (body.kwh === undefined || body.kwh === null || body.kwh === "") {
-    return { ok: false, error: "kwh is required" };
-  }
-  const kwh = Number(body.kwh);
-  if (!Number.isFinite(kwh) || kwh <= 0) {
-    return { ok: false, error: "kwh must be a positive number" };
-  }
+  const kwh = positiveNumber(body.kwh);
+  if (!kwh.ok) return { ok: false, error: "kwh must be a positive number" };
 
   let milesAdded = null;
   if (body.miles_added !== undefined && body.miles_added !== null && body.miles_added !== "") {
-    const m = Number(body.miles_added);
-    if (!Number.isFinite(m)) return { ok: false, error: "miles_added must be a number" };
-    milesAdded = m;
+    const m = positiveNumber(body.miles_added);
+    if (!m.ok) return { ok: false, error: "miles_added must be a positive number" };
+    milesAdded = m.value;
   }
 
   return {
     ok: true,
     values: {
       date: body.date,
-      odometer: Math.round(odometer),
-      kwh,
+      odometer: odo.value,
+      kwh: kwh.value,
       miles_added: milesAdded,
       notes: text(body.notes),
     },

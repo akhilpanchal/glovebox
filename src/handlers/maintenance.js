@@ -1,6 +1,7 @@
 import { json } from "../lib/responses.js";
 import { authedEmail } from "../lib/auth.js";
 import { parseJson } from "../lib/columns.js";
+import { isYmd, positiveInt, text } from "../lib/validate.js";
 
 // Mirror of the frontend list; keep the two in sync.
 const CATEGORIES = new Set([
@@ -19,12 +20,6 @@ function hydrate(row) {
   };
 }
 
-function text(value) {
-  if (value === undefined || value === null) return null;
-  const s = String(value).trim();
-  return s === "" ? null : s;
-}
-
 // Validate + normalize a request body into DB-ready column values. Returns
 // { ok, error } or { ok, values }.
 function normalize(body) {
@@ -32,18 +27,18 @@ function normalize(body) {
     return { ok: false, error: "Invalid body" };
   }
 
-  if (!body.date || typeof body.date !== "string") {
-    return { ok: false, error: "date is required" };
+  if (!isYmd(body.date)) {
+    return { ok: false, error: "date is required (YYYY-MM-DD)" };
   }
 
-  if (body.odometer === undefined || body.odometer === null || body.odometer === "") {
-    return { ok: false, error: "odometer is required" };
-  }
-  const odometer = Number(body.odometer);
-  if (!Number.isFinite(odometer)) {
-    return { ok: false, error: "odometer must be a number" };
+  const odo = positiveInt(body.odometer);
+  if (!odo.ok) {
+    return { ok: false, error: "odometer must be a positive integer" };
   }
 
+  // Costs may legitimately be 0 (free warranty work) or negative (a discount
+  // line), so — unlike physical quantities — they get only a finite-number
+  // check, never a positive-only one.
   let totalCost = null;
   if (body.total_cost !== undefined && body.total_cost !== null && body.total_cost !== "") {
     const c = Number(body.total_cost);
@@ -86,7 +81,7 @@ function normalize(body) {
     ok: true,
     values: {
       date: body.date,
-      odometer: Math.round(odometer),
+      odometer: odo.value,
       shop_name: text(body.shop_name),
       total_cost: totalCost,
       categories: JSON.stringify(categories),
