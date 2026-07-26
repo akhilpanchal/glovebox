@@ -23,6 +23,14 @@ let cachedCharges = [];
 let editingId = null;
 const els = {};
 
+// Who logged the entry, as a compact initial-avatar (full address on hover) —
+// the same email repeated on every row was clutter and owner-identifying.
+function loggerBadge(email) {
+  if (!email) return "";
+  const initial = escapeHtml((email.trim().charAt(0) || "?").toUpperCase());
+  return ` <span class="hi-logger" title="${escapeHtml(email)}">${initial}</span>`;
+}
+
 export function initFuel() {
   els.form = document.getElementById("entry-form");
   els.formError = document.getElementById("form-error");
@@ -234,7 +242,7 @@ function renderHistory() {
           <div class="hi-odo">${formatOdometer(e.odometer)}</div>
           <div class="hi-meta">${formatDate(e.date)} · <span class="hi-mono">${formatVolume(
             e.volume
-          )}</span> · ${escapeHtml(e.added_by)}</div>
+          )}</span>${loggerBadge(e.added_by)}</div>
           ${notesHtml}
           ${itemActions(e.id)}
         </li>`;

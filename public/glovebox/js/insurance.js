@@ -54,10 +54,15 @@ function renderView() {
 
   if (isEmpty(d)) {
     bodyEl.innerHTML = `
-      <div class="card-head"><h2>Insurance</h2>
-        <button type="button" class="btn-secondary" id="ins-edit">Add details</button>
-      </div>
-      <p class="placeholder-note">No insurance details yet.</p>`;
+      <div class="card-head"><h2>Insurance</h2></div>
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <h3>No insurance on file</h3>
+        <p>Add your policy details and emergency numbers so they're handy in a pinch.</p>
+        <button type="button" class="btn-primary" id="ins-edit">Add details</button>
+      </div>`;
     bodyEl.querySelector("#ins-edit").addEventListener("click", openForm);
     return;
   }

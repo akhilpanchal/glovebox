@@ -68,6 +68,9 @@ function render() {
     ).join("");
     els.log.innerHTML = `
       <div class="ask-empty">
+        <div class="empty-state-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
+        </div>
         <p class="ask-empty-title">Ask about your car</p>
         <p class="ask-empty-sub">Maintenance history, whether a service is due, what it should cost.</p>
         <div class="ask-suggestions">${chips}</div>
