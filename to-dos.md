@@ -242,6 +242,69 @@ web-first price-fairness path.
 
 ---
 
+### GLOV-5 — Log fuel & charging entries by instructing the Ask agent (conversational write)
+
+- **Status:** Backlog
+- **Priority:** P2
+- **Area:** agent, api, ui
+- **Created:** 2026-07-25
+
+**Goal.** Let the user create a fuel or charging log entry by *telling* the Ask
+chatbot — e.g. "log 9.2 gallons at 65,340 miles today" or "charged 8.4 kWh, odometer
+65,410" — instead of opening the form. The agent extracts the fields and records the
+entry.
+
+**Decision: extend the existing Ask agent, not a second bot.** One conversational
+surface for both asking and telling (natural for a family tool), and the tool loop we
+already built is the mechanism for it — add `log_fuel_entry` / `log_charge_entry` tools
+alongside `get_maintenance_dueness`; the model routes questions to the read tool and
+instructions to the write tools.
+
+**Why this is a real capability jump, not a quick tool bolt-on.** Every agent tool today
+is **read-only** — worst case is a wrong answer, nothing persists. A write tool mutates
+D1, and that changes the risk model. Treat this as the "answer-only → answer *and act*"
+upgrade and give it its own short design pass (peer to the streaming milestone) before
+building.
+
+**Things to think through (not decisions):**
+
+- **Confirm before commit.** A write must never fire silently inside the tool loop.
+  Two-turn flow that fits our stateless, non-streaming chat: turn 1 the model extracts
+  values and echoes a summary ("Log 9.2 gal at 65,340 mi on 25 Jul, 2026?"); turn 2 the
+  user confirms; *then* the write tool executes. Human-in-the-loop for any state change.
+- **Server validates what the model extracts.** The model does the NLU (reads numbers
+  out of free text — legitimately its job), but the Worker is the gatekeeper: odometer is
+  an integer and not below the last reading, volume/kWh positive and sane, date parses.
+  Reuse the same validation the POST form endpoints already apply — the write tool should
+  funnel through the *same* insert path, not a parallel one.
+- **Identity stays server-owned.** `added_by` comes from the Cf-Access header, never from
+  the model or tool input. Tool schema exposes only `date/odometer/volume/notes` (fuel)
+  and `date/odometer/kwh/miles_added/notes` (charge) — no identity field, matching the
+  manual-form contract.
+- **Units.** The user may speak in km/L; canonical storage stays miles/gallons. Decide
+  whether the model normalizes or the server converts (prefer server-side, consistent with
+  the "convert at the edges only" convention).
+- **Unlocks true statelessness pressure.** A confirm/deny spanning two turns leans harder
+  on the browser-held transcript; make sure a mid-confirmation refresh degrades safely
+  (worst case: no write happens).
+
+**Acceptance criteria (for when this is picked up):**
+
+- [ ] A short design note on the write-capability model (confirm step, validation reuse,
+      identity rule) written down before implementation.
+- [ ] The agent can create a fuel entry and a charging entry from a natural-language
+      instruction, each gated behind an explicit user confirmation.
+- [ ] Writes go through the same validation + insert path as the manual forms; invalid
+      values (e.g. odometer below last reading) are rejected with a clear message, no row
+      created.
+- [ ] `added_by` is server-derived; no identity field is ever accepted from the model.
+
+**Notes.** Raised 2026-07-25. Relates to the [[v3-agent-architecture]] tool loop and, in
+spirit, to the deferred streaming milestone (both are capability upgrades to the Ask
+agent that each warrant their own design discussion first).
+
+---
+
 ## To Do
 
 _(nothing scheduled yet)_
